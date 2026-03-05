@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>VocabAI · 英语词汇助手</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ── MOBILE GLOBAL ── */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{-webkit-tap-highlight-color:transparent}
+body{-webkit-overflow-scrolling:touch;overscroll-behavior:none}
+input,textarea,select{font-size:16px!important} /* 防止iOS自动放大 */
+button{cursor:pointer;-webkit-appearance:none;appearance:none}
+:root{--bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e2a;--border:#252a38;--gold:#c9a84c;--gold2:#e8c46a;--goldDim:rgba(201,168,76,0.12);--text:#e8e6df;--textDim:#7a7f95;--textMid:#b0b3c6;--red:#e05c5c;--green:#5cb88a;--blue:#5b8be0;--orange:#e0935c;--radius:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── LOCK SCREEN ── */
+#lockScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.lock-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:24px;padding:40px 36px;width:100%;max-width:380px;text-align:center}
+.lock-logo{font-family:'Playfair Display',serif;font-size:28px;color:var(--gold2);margin-bottom:6px}
+.lock-logo span{color:var(--textDim)}
+.lock-subtitle{font-size:13px;color:var(--textDim);margin-bottom:32px}
+.lock-icon{font-size:44px;margin-bottom:20px}
+.lock-label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--textDim);margin-bottom:8px;text-align:left}
+.lock-input{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:13px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:16px;outline:none;letter-spacing:.15em;transition:border-color .2s;text-align:center;margin-bottom:12px}
+.lock-input:focus{border-color:var(--gold)}
+.lock-input.shake{animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.lock-btn{width:100%;background:var(--gold);border:none;border-radius:10px;padding:14px;color:var(--bg);font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;cursor:pointer;transition:all .2s;margin-bottom:12px}
+.lock-btn:hover{background:var(--gold2)}
+.lock-btn.secondary{background:var(--bg3);border:1.5px solid var(--border);color:var(--textMid);font-size:13px;padding:11px}
+.lock-btn.secondary:hover{border-color:var(--gold);color:var(--gold2)}
+.lock-error{font-size:13px;color:var(--red);min-height:20px;margin-bottom:8px}
+.lock-note{font-size:11px;color:var(--textDim);line-height:1.6;margin-top:10px}
+
+/* ── APP (hidden until unlocked) ── */
+#appWrapper{display:none}
+.header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;background:var(--bg);position:sticky;top:0;z-index:100}
+.logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold2);letter-spacing:-.5px}
+.logo span{color:var(--textDim);font-weight:500}
+.header-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.lock-app-btn{background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--textDim);font-size:12px;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;gap:5px}
+.lock-app-btn:hover{border-color:var(--gold);color:var(--gold2)}
+.nav{display:flex;gap:4px}
+.nav-btn{background:none;border:none;cursor:pointer;padding:8px 14px;border-radius:8px;color:var(--textDim);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;transition:all .2s;display:flex;align-items:center;gap:5px}
+.nav-btn:hover{background:var(--bg3);color:var(--text)}
+.nav-btn.active{background:var(--goldDim);color:var(--gold2)}
+.nav-btn svg{width:15px;height:15px}
+.main{flex:1;max-width:780px;margin:0 auto;width:100%;padding:32px 20px 80px}
+.page{display:none}.page.active{display:block}
+
+/* ── INPUT ── */
+.input-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--textDim);margin-bottom:10px}
+.input-wrap{position:relative;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);transition:border-color .2s}
+.input-wrap:focus-within{border-color:var(--gold)}
+.main-input{width:100%;background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:17px;padding:18px 60px 18px 20px;resize:none;min-height:64px;line-height:1.5}
+.main-input::placeholder{color:var(--textDim)}
+.search-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:10px;background:var(--gold);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.search-btn:hover{background:var(--gold2)}.search-btn:disabled{background:var(--bg3);cursor:not-allowed}
+.search-btn svg{width:18px;height:18px;color:var(--bg)}
+.hint{margin-top:8px;font-size:12px;color:var(--textDim);display:flex;align-items:center;gap:6px}
+.hint-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.active-provider-badge{display:inline-flex;align-items:center;gap:4px;background:var(--goldDim);border:1px solid var(--gold);color:var(--gold2);padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;margin-top:8px}
+
+/* ── TOKENS ── */
+.token-section{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px;margin:16px 0}
+.token-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.token-label{font-size:12px;color:var(--textDim);font-weight:500}
+.token-clear{background:none;border:none;cursor:pointer;color:var(--gold);font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;padding:3px 8px;border-radius:6px}
+.tokens-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.token{padding:6px 12px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--border);color:var(--text);font-size:15px;cursor:pointer;transition:all .15s;user-select:none;font-family:'DM Sans',sans-serif}
+.token:hover{border-color:var(--gold);color:var(--gold2)}
+.token.selected{background:var(--goldDim);border-color:var(--gold);color:var(--gold2);font-weight:600}
+.token.punct{cursor:default;color:var(--textDim);background:none;border-color:transparent}
+.token.punct:hover{border-color:transparent;color:var(--textDim)}
+.sel-preview{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.phrase-chip{background:var(--goldDim);border:1px solid var(--gold);color:var(--gold2);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.query-sel-btn{width:100%;background:var(--gold);border:none;cursor:pointer;color:var(--bg);font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;padding:13px;border-radius:10px;transition:all .2s}
+.query-sel-btn:hover{background:var(--gold2)}.query-sel-btn:disabled{background:var(--bg3);color:var(--textDim);cursor:not-allowed}
+
+/* ── LOADING/ERROR ── */
+.loading{text-align:center;padding:40px 0;display:none}.loading.show{display:block}
+.spinner{width:34px;height:34px;margin:0 auto 14px;border:3px solid var(--bg3);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{color:var(--textDim);font-size:14px}
+.error-box{background:rgba(224,92,92,0.08);border:1px solid rgba(224,92,92,0.3);border-radius:10px;padding:14px 16px;margin-bottom:16px;color:var(--red);font-size:14px;display:none;align-items:flex-start;gap:10px}
+.error-box.show{display:flex}
+
+/* ── RESULTS ── */
+.results-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.results-title{font-size:12px;color:var(--textDim);font-weight:500;letter-spacing:.05em;text-transform:uppercase}
+.clear-res{background:none;border:none;cursor:pointer;color:var(--textDim);font-size:12px;font-family:'DM Sans',sans-serif;padding:4px 10px;border-radius:6px;transition:all .2s}
+.clear-res:hover{color:var(--red)}
+
+/* ── WORD CARD ── */
+.word-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:18px;margin-bottom:14px;overflow:hidden;animation:slideUp .3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card-header{padding:18px 20px 16px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border)}
+.card-word{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--gold2)}
+.card-pos{display:inline-block;margin-left:9px;background:rgba(201,168,76,0.15);color:var(--gold);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:20px;vertical-align:middle;font-family:'DM Sans',sans-serif}
+.card-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.save-btn,.collapse-btn{width:34px;height:34px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:var(--textDim)}
+.save-btn:hover{border-color:var(--gold);color:var(--gold)}.save-btn.saved{background:var(--goldDim);border-color:var(--gold);color:var(--gold)}
+.save-btn svg,.collapse-btn svg{width:15px;height:15px}
+.card-body{padding:16px 20px}.card-body.hidden{display:none}
+.sec-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--textDim);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sec-label::before{content:'';width:10px;height:2px;background:var(--gold);border-radius:1px}
+.ctx-box{background:rgba(201,168,76,0.06);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 12px;font-size:14px;color:var(--textMid);line-height:1.6}
+.def-list{list-style:none}.def-list li{padding:4px 0;font-size:15px;color:var(--text);display:flex;gap:10px;line-height:1.5}
+.def-list li::before{content:'';width:4px;height:4px;background:var(--gold);border-radius:50%;flex-shrink:0;margin-top:8px}
+.idiom-list{list-style:none}.idiom-list li{padding:5px 0;font-size:14px;color:var(--textMid);border-bottom:1px solid var(--border);line-height:1.5;display:flex;gap:8px}
+.idiom-list li:last-child{border-bottom:none}.idiom-list li::before{content:'✦';color:var(--gold);font-size:10px;flex-shrink:0;margin-top:3px}
+.ex-list{list-style:none;counter-reset:ex}.ex-list li{padding:4px 0;font-size:13px;color:var(--textDim);font-style:italic;line-height:1.6;counter-increment:ex;display:flex;gap:8px}
+.ex-list li::before{content:counter(ex)'.';color:var(--gold);font-style:normal;font-weight:600;font-size:11px;flex-shrink:0;margin-top:2px}
+.note-area{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;resize:none;outline:none;min-height:68px;line-height:1.6;transition:border-color .2s}
+.note-area::placeholder{color:var(--textDim)}.note-area:focus{border-color:var(--gold)}
+.card-section{margin-bottom:16px}.card-section:last-child{margin-bottom:0}
+
+/* ── VOCAB ── */
+.vocab-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+.stat-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.stat-num{font-family:'Playfair Display',serif;font-size:26px;color:var(--gold2)}
+.stat-label{font-size:12px;color:var(--textDim);margin-top:2px}
+.stat-card.due .stat-num{color:var(--orange)}.stat-card.mastered .stat-num{color:var(--green)}
+.search-bar-wrap{position:relative;margin-bottom:18px}
+.search-bar{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px 11px 38px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.search-bar:focus{border-color:var(--gold)}.search-bar::placeholder{color:var(--textDim)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--textDim);width:15px;height:15px}
+.rev-banner{background:rgba(201,168,76,0.1);border:1.5px solid rgba(201,168,76,0.3);border-radius:12px;padding:13px 17px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .2s}
+.rev-banner:hover{background:rgba(201,168,76,0.15)}
+.rev-banner-text{font-size:14px;color:var(--gold2);font-weight:500}
+.rev-banner-text span{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-right:6px}
+.vocab-list{display:flex;flex-direction:column;gap:7px}
+.vocab-item{background:var(--bg2);border:1.5px solid var(--border);border-radius:11px;padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s}
+.vocab-item:hover{border-color:rgba(201,168,76,0.4);transform:translateX(2px)}
+.vocab-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.vocab-dot.due{background:var(--orange)}.vocab-dot.ok{background:var(--green)}
+.vocab-info{flex:1;min-width:0}
+.vocab-word{font-family:'Playfair Display',serif;font-size:17px;color:var(--text)}
+.vocab-pos{display:inline-block;margin-left:7px;background:rgba(201,168,76,0.12);color:var(--gold);font-size:10px;font-weight:600;text-transform:uppercase;padding:2px 7px;border-radius:20px;vertical-align:middle;font-family:'DM Sans',sans-serif}
+.vocab-def{font-size:13px;color:var(--textDim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vocab-meta{text-align:right;flex-shrink:0}.vocab-date{font-size:11px;color:var(--textDim)}
+.vocab-due{font-size:11px;color:var(--orange);font-weight:600;margin-top:2px}
+.vocab-del{width:28px;height:28px;border-radius:7px;background:none;border:1.5px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--textDim);transition:all .2s;flex-shrink:0}
+.vocab-del:hover{border-color:var(--red);color:var(--red)}.vocab-del svg{width:13px;height:13px}
+.empty-state{text-align:center;padding:56px 20px;color:var(--textDim)}
+.empty-icon{font-size:44px;margin-bottom:14px;opacity:.4}
+.empty-state h3{font-size:17px;color:var(--textMid);margin-bottom:7px}
+.empty-state p{font-size:13px;line-height:1.6}
+
+/* ── REVIEW ── */
+.review-container{max-width:480px;margin:0 auto}
+.rev-progress{height:4px;background:var(--bg3);border-radius:2px;margin-bottom:28px}
+.rev-bar{height:100%;background:var(--gold);border-radius:2px;transition:width .4s ease}
+.flip-card{perspective:1000px;height:300px;margin-bottom:22px;cursor:pointer}
+.flip-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s ease}
+.flip-inner.flipped{transform:rotateY(180deg)}
+.flip-front,.flip-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:18px;background:var(--bg2);border:1.5px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px}
+.flip-back{transform:rotateY(180deg);align-items:flex-start;justify-content:flex-start;overflow-y:auto}
+.flip-word{font-family:'Playfair Display',serif;font-size:44px;font-weight:700;color:var(--gold2);text-align:center;margin-bottom:10px}
+.flip-hint{font-size:12px;color:var(--textDim);text-align:center;margin-top:14px}.flip-hint span{color:var(--gold)}
+.flip-back-word{font-family:'Playfair Display',serif;font-size:21px;color:var(--gold2);margin-bottom:12px}
+.flip-defs{list-style:none;width:100%}.flip-defs li{padding:4px 0;font-size:14px;color:var(--text);display:flex;gap:8px}
+.flip-defs li::before{content:'•';color:var(--gold);flex-shrink:0}
+.flip-ctx{background:rgba(201,168,76,0.06);border-left:3px solid var(--gold);padding:7px 11px;border-radius:0 6px 6px 0;font-size:13px;color:var(--textMid);margin-top:10px;width:100%}
+.flip-idioms{margin-top:10px;width:100%}.flip-idioms p{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--textDim);margin-bottom:5px}
+.flip-idioms li{font-size:12px;color:var(--textDim);padding:2px 0;display:flex;gap:6px;list-style:none}
+.flip-idioms li::before{content:'✦';color:var(--gold);font-size:9px;flex-shrink:0}
+.rating-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rating-btn{padding:11px 6px;border-radius:10px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.rating-btn span{font-size:20px}.rating-btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.rating-btn.r0{background:rgba(224,92,92,0.15);color:var(--red)}.rating-btn.r2{background:rgba(224,147,92,0.15);color:var(--orange)}
+.rating-btn.r3{background:rgba(91,139,224,0.15);color:var(--blue)}.rating-btn.r5{background:rgba(92,184,138,0.15);color:var(--green)}
+.rev-summary{text-align:center;padding:36px 20px}
+.sum-trophy{font-size:60px;margin-bottom:18px}
+.sum-title{font-family:'Playfair Display',serif;font-size:28px;color:var(--gold2);margin-bottom:7px}
+.sum-sub{color:var(--textDim);font-size:14px;margin-bottom:26px}
+.sum-stats{display:flex;gap:22px;justify-content:center;margin-bottom:26px}
+.sum-stat{text-align:center}.sum-num{font-family:'Playfair Display',serif;font-size:34px;font-weight:700}
+.sum-num.good{color:var(--green)}.sum-num.bad{color:var(--orange)}
+.sum-label{font-size:12px;color:var(--textDim);margin-top:2px}
+.again-btn{background:var(--gold);border:none;cursor:pointer;color:var(--bg);font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;padding:13px 30px;border-radius:10px;transition:all .2s}
+.again-btn:hover{background:var(--gold2)}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:36px 20px;overflow-y:auto;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg2);border:1.5px solid var(--border);border-radius:20px;width:100%;max-width:580px;padding:26px;position:relative;animation:slideUp .25s ease}
+.modal-close{position:absolute;top:17px;right:17px;width:31px;height:31px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--textDim);transition:all .2s}
+.modal-close:hover{color:var(--text)}.modal-close svg{width:13px;height:13px}
+.modal-word{font-family:'Playfair Display',serif;font-size:30px;color:var(--gold2);margin-bottom:4px}
+.modal-meta{font-size:13px;color:var(--textDim);margin-bottom:20px}
+.modal-sec{margin-bottom:18px}
+.modal-sec-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--textDim);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.modal-sec-title::before{content:'';width:10px;height:2px;background:var(--gold);border-radius:1px}
+.sm2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;text-align:center}
+.sm2-cell{background:var(--bg3);border-radius:8px;padding:10px}
+.sm2-val{font-size:15px;font-weight:600;color:var(--text)}.sm2-key{font-size:10px;color:var(--textDim);margin-top:2px}
+.del-entry-btn{width:100%;background:rgba(224,92,92,0.1);border:1.5px solid rgba(224,92,92,0.3);border-radius:10px;padding:11px;cursor:pointer;color:var(--red);font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;margin-top:18px;transition:all .2s}
+.del-entry-btn:hover{background:rgba(224,92,92,0.2)}
+
+/* ── SETTINGS ── */
+.settings-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:16px;padding:22px;margin-bottom:14px}
+.settings-title{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--textDim);margin-bottom:14px}
+.provider-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.ptab{background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--textMid);display:flex;align-items:center;gap:7px}
+.ptab:hover{border-color:var(--gold)}.ptab.active{border-color:var(--gold);background:var(--goldDim);color:var(--gold2)}
+.ptab .pcheck{width:7px;height:7px;border-radius:50%;background:var(--border)}.ptab .pcheck.set{background:var(--green)}
+.model-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.model-row label{font-size:12px;color:var(--textDim);font-weight:500;flex-shrink:0}
+.model-select{flex:1;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;cursor:pointer;transition:border-color .2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f95' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.model-select:focus{border-color:var(--gold)}
+.api-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.api-input{flex:1;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color .2s}
+.api-input:focus{border-color:var(--gold)}.api-input::placeholder{color:var(--textDim)}
+.api-save-btn{padding:11px 18px;background:var(--gold);border:none;border-radius:9px;cursor:pointer;color:var(--bg);font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;transition:all .2s;white-space:nowrap}
+.api-save-btn:hover{background:var(--gold2)}
+.key-st{font-size:12px;display:flex;align-items:center;gap:5px;margin-bottom:10px}
+.key-st.ok{color:var(--green)}.key-st.none{color:var(--textDim)}
+.provider-info{font-size:12px;color:var(--textDim);line-height:1.7}
+.provider-info a{color:var(--gold)}
+.all-keys-list{display:flex;flex-direction:column;gap:6px}
+.key-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:9px;padding:11px 14px}
+.key-item-left{display:flex;align-items:center;gap:10px}
+.key-item-icon{font-size:18px}
+.key-item-name{font-size:13px;font-weight:600;color:var(--text)}
+.key-item-status{font-size:11px;color:var(--textDim);margin-top:1px}
+.key-item-status.set{color:var(--green)}
+.active-tag{font-size:10px;font-weight:700;color:var(--gold);background:var(--goldDim);padding:2px 8px;border-radius:20px}
+.pw-section{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.pw-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.pw-input{flex:1;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;outline:none;transition:border-color .2s;letter-spacing:.1em}
+.pw-input:focus{border-color:var(--gold)}.pw-input::placeholder{color:var(--textDim)}
+.pw-btn{padding:11px 16px;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;color:var(--textMid);font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;transition:all .2s;white-space:nowrap}
+.pw-btn:hover{border-color:var(--gold);color:var(--gold2)}.pw-btn.danger{border-color:rgba(224,92,92,.3);color:var(--red)}
+.pw-btn.danger:hover{background:rgba(224,92,92,.1)}
+/* deploy / guide */
+.guide-list{list-style:none}
+.guide-list li{padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:13px;align-items:flex-start}
+.guide-list li:last-child{border-bottom:none}
+.guide-num{width:23px;height:23px;border-radius:50%;background:var(--goldDim);color:var(--gold);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.guide-text strong{color:var(--text);font-size:14px;display:block}.guide-text span{color:var(--textDim);font-size:12px}
+.deploy-opt{background:var(--bg3);border:1.5px solid var(--border);border-radius:11px;padding:14px;margin-bottom:9px}
+.deploy-opt h4{color:var(--text);font-size:13px;margin-bottom:4px;display:flex;align-items:center;gap:7px}
+.badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:10px}
+.badge.free{background:rgba(92,184,138,0.15);color:var(--green)}
+.deploy-opt p{color:var(--textDim);font-size:12px;line-height:1.6}
+/* Toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(18px);background:var(--bg3);border:1.5px solid var(--border);color:var(--text);padding:11px 20px;border-radius:50px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:9999;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.gold{border-color:var(--gold);color:var(--gold2)}
+@media(max-width:700px){
+  /* Header: logo + lock on top, nav on bottom */
+  .header{padding:11px 14px;flex-wrap:wrap;gap:8px}
+  .logo{font-size:18px}
+  .header-right{width:100%;justify-content:space-between;margin-left:0}
+  .nav{gap:2px;flex:1}
+  .nav-btn{padding:7px 8px;font-size:11px;gap:3px;flex:1;justify-content:center}
+  .nav-btn svg{width:14px;height:14px}
+  .lock-app-btn{padding:6px 10px;font-size:11px;flex-shrink:0}
+  /* Main */
+  .main{padding:16px 12px 100px}
+  /* Input */
+  .main-input{font-size:16px;padding:14px 52px 14px 14px}
+  .search-btn{right:10px;width:36px;height:36px}
+  /* Cards */
+  .card-word{font-size:20px}
+  .card-header{padding:14px 14px 12px}
+  .card-body{padding:12px 14px}
+  /* Review */
+  .flip-word{font-size:32px}
+  .flip-card{height:260px}
+  .rating-row{grid-template-columns:repeat(2,1fr);gap:6px}
+  .rating-btn{padding:12px 6px;font-size:11px}
+  /* Vocab */
+  .vocab-stats{gap:8px}
+  .stat-num{font-size:22px}
+  /* Settings */
+  .sm2-grid{grid-template-columns:repeat(2,1fr)}
+  .provider-tabs{gap:5px}
+  .ptab{padding:8px 10px;font-size:12px}
+  .api-row{flex-wrap:wrap}
+  .api-save-btn{width:100%}
+  /* Lock screen */
+  .lock-card{padding:28px 20px}
+  /* Modal */
+  .modal-overlay{padding:20px 12px}
+  .modal{padding:20px 16px}
+  .sm2-grid{grid-template-columns:repeat(2,1fr)}
+}
+/* 底部安全区（iPhone X+刘海屏） */
+@supports(padding-bottom:env(safe-area-inset-bottom)){
+  .main{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOCK SCREEN ═══════════════ -->
+<div id="lockScreen">
+  <div class="lock-card" id="lockCard">
+    <div class="lock-logo">Vocab<span>AI</span></div>
+    <div class="lock-subtitle">英语词汇助手</div>
+    <div class="lock-icon" id="lockIcon">🔒</div>
+    <div id="lockBody"><!-- rendered by JS --></div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="appWrapper">
+<div class="app">
+<header class="header">
+  <div class="logo">Vocab<span>AI</span></div>
+  <div class="header-right">
+    <button class="lock-app-btn" onclick="lockApp()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>锁定
+    </button>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="showPage('lookup')" id="nav-lookup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>查词
+      </button>
+      <button class="nav-btn" onclick="showPage('vocab')" id="nav-vocab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>生词本
+      </button>
+      <button class="nav-btn" onclick="showPage('review')" id="nav-review">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>复习
+      </button>
+      <button class="nav-btn" onclick="showPage('settings')" id="nav-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>设置
+      </button>
+    </nav>
+  </div>
+</header>
+<main class="main">
+
+<!-- LOOKUP -->
+<div class="page active" id="page-lookup">
+  <div style="margin-bottom:24px">
+    <div class="input-label">输入单词或句子</div>
+    <div class="input-wrap">
+      <textarea class="main-input" id="mainInput" placeholder="输入单词、短语或整句话…&#10;如：canvas  /  the connected canvas for teams shipping with agents" rows="2"></textarea>
+      <button class="search-btn" id="searchBtn" onclick="handleQuery()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:8px">
+      <div class="hint"><span class="hint-dot"></span>自动识别：单词直接查 · 句子分词后点击选词 · ⌘+Enter 快捷</div>
+      <div class="active-provider-badge" id="activeBadge">···</div>
+    </div>
+  </div>
+  <div class="token-section" id="tokenSection" style="display:none">
+    <div class="token-header">
+      <span class="token-label">点击选词 · 相邻词自动合并为短语</span>
+      <button class="token-clear" onclick="clearSel()">清除选择</button>
+    </div>
+    <div class="tokens-wrap" id="tokensWrap"></div>
+    <div class="sel-preview" id="selPreview" style="display:none"></div>
+    <button class="query-sel-btn" id="querySelBtn" onclick="querySelected()" disabled>查询选中词</button>
+  </div>
+  <div class="error-box" id="errorBox">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span id="errorMsg"></span>
+  </div>
+  <div class="loading" id="loadingBox"><div class="spinner"></div><p id="loadingMsg">正在查询…</p></div>
+  <div id="resultsContainer"></div>
+</div>
+
+<!-- VOCAB -->
+<div class="page" id="page-vocab">
+  <div class="vocab-stats">
+    <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">总词数</div></div>
+    <div class="stat-card due"><div class="stat-num" id="statDue">0</div><div class="stat-label">待复习</div></div>
+    <div class="stat-card mastered"><div class="stat-num" id="statMastered">0</div><div class="stat-label">已掌握</div></div>
+  </div>
+  <div id="revBannerWrap"></div>
+  <div class="search-bar-wrap">
+    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-bar" id="vocabSearch" placeholder="搜索单词…" oninput="renderVocabList()">
+  </div>
+  <div class="vocab-list" id="vocabList"></div>
+</div>
+
+<!-- REVIEW -->
+<div class="page" id="page-review"><div id="reviewContent"></div></div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+
+  <!-- Provider & Key -->
+  <div class="settings-card">
+    <div class="settings-title">AI 提供商 & API Key</div>
+    <div class="provider-tabs" id="providerTabs"></div>
+    <div class="model-row">
+      <label>模型</label>
+      <select class="model-select" id="modelSelect" onchange="saveModelChoice()"></select>
+    </div>
+    <div class="api-row">
+      <input class="api-input" id="apiKeyInput" type="password" placeholder="粘贴 API Key…">
+      <button class="api-save-btn" onclick="saveProviderKey()">保存</button>
+    </div>
+    <div class="key-st none" id="keyStatus">未配置</div>
+    <div class="provider-info" id="providerInfo"></div>
+  </div>
+
+  <!-- All keys overview -->
+  <div class="settings-card">
+    <div class="settings-title">已配置的 Key 总览</div>
+    <div class="all-keys-list" id="allKeysList"></div>
+  </div>
+
+  <!-- Password management -->
+  <div class="settings-card">
+    <div class="settings-title">🔐 访问密码管理</div>
+    <p style="font-size:13px;color:var(--textDim);line-height:1.7;margin-bottom:14px">
+      密码用于保护你的网站访问权限，同时对 API Key 进行加密存储。<br>
+      <strong style="color:var(--orange)">注意：修改密码会清空所有已保存的 API Key，需重新填入。</strong>
+    </p>
+    <div class="pw-row">
+      <input class="pw-input" id="newPw1" type="password" placeholder="新密码">
+      <input class="pw-input" id="newPw2" type="password" placeholder="确认新密码">
+      <button class="pw-btn" onclick="changePassword()">修改密码</button>
+    </div>
+    <div id="pwChangeStatus" style="font-size:12px;color:var(--textDim);margin-top:6px"></div>
+  </div>
+
+  <!-- Data -->
+  <div class="settings-card">
+    <div class="settings-title">数据管理</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:9px">
+      <button onclick="exportData()" style="flex:1;padding:10px;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px">📤 导出生词本</button>
+      <label style="flex:1;padding:10px;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;color:var(--text);font-size:13px;text-align:center">📥 导入生词本<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+    </div>
+    <button onclick="clearAll()" style="width:100%;padding:10px;background:rgba(224,92,92,0.08);border:1.5px solid rgba(224,92,92,0.25);border-radius:9px;cursor:pointer;color:var(--red);font-family:'DM Sans',sans-serif;font-size:13px">🗑 清空所有生词本数据</button>
+  </div>
+
+  <!-- Guide -->
+  <div class="settings-card">
+    <div class="settings-title">免费部署 & 安全说明</div>
+    <div class="deploy-opt">
+      <h4>🔒 API Key 安全机制 <span class="badge free">已内置</span></h4>
+      <p>API Key 使用 AES-GCM 加密后才存入 localStorage。加密密钥由你的访问密码通过 PBKDF2 派生，即使别人打开你的网址，不知道密码就无法解密或使用 Key。</p>
+    </div>
+    <div class="deploy-opt">
+      <h4>📂 本地使用 <span class="badge free">完全免费</span></h4>
+      <p>双击 HTML 文件用浏览器打开即可，无需服务器。</p>
+    </div>
+    <div class="deploy-opt">
+      <h4>🐙 GitHub Pages <span class="badge free">完全免费</span></h4>
+      <p>仓库可设为 Private，即使 Public 也因有密码保护而安全。上传为 index.html → Settings → Pages → Branch: main。</p>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  PROVIDERS CONFIG
+// ═══════════════════════════════════════
+const PROVIDERS = {
+  anthropic: {
+    name: 'Claude', icon: '🤖',
+    models: ['claude-sonnet-4-20250514','claude-opus-4-20250514','claude-haiku-4-5-20251001','claude-3-5-sonnet-20241022','claude-3-5-haiku-20241022'],
+    placeholder: 'sk-ant-api03-…',
+    link: 'https://console.anthropic.com',
+    linkText: 'console.anthropic.com',
+    info: '支持最新 Claude 4 全系列模型。',
+    async call(apiKey, model, prompt) {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({ model, max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+      })
+      if (!r.ok) { const t = await r.text(); throw new Error(r.status === 401 ? 'API Key 无效' : `HTTP ${r.status}: ${t.slice(0,100)}`) }
+      const d = await r.json()
+      return d.content.find(c => c.type === 'text')?.text || ''
+    }
+  },
+  openai: {
+    name: 'ChatGPT', icon: '✨',
+    models: ['gpt-4o','gpt-4o-mini','gpt-4-turbo','gpt-3.5-turbo'],
+    placeholder: 'sk-…',
+    link: 'https://platform.openai.com/api-keys',
+    linkText: 'platform.openai.com',
+    info: '支持 GPT-4o / GPT-4o mini 等全系列。',
+    async call(apiKey, model, prompt) {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({ model, max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+      })
+      if (!r.ok) { const t = await r.text(); throw new Error(r.status === 401 ? 'API Key 无效' : `HTTP ${r.status}: ${t.slice(0,100)}`) }
+      const d = await r.json()
+      return d.choices[0]?.message?.content || ''
+    }
+  },
+  gemini: {
+    name: 'Gemini', icon: '💫',
+    models: ['gemini-2.0-flash-lite','gemini-2.0-flash','gemini-2.5-flash'],
+    placeholder: 'AIza…',
+    link: 'https://aistudio.google.com/app/apikey',
+    linkText: 'aistudio.google.com',
+    info: 'Google Gemini。免费版推荐用 gemini-2.0-flash-lite（配额最宽松），gemini-2.5-flash 效果更好。',
+    async call(apiKey, model, prompt) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000 } })
+      })
+      if (!r.ok) {
+        const t = await r.text()
+        if (r.status === 429) throw new Error('Gemini 429：配额超限或网络限制。请改用 Groq（⚡ 完全免费，注册 console.groq.com 即可）')
+        if (r.status === 404) throw new Error(`模型不存在：${model}，请在设置中切换模型`)
+        if (r.status === 403) throw new Error('API Key 无权限，请确认 Key 来自 AI Studio 且账号正常')
+        throw new Error(`HTTP ${r.status}: ${t.slice(0,120)}`)
+      }
+      const d = await r.json()
+      return d.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    }
+  },
+  deepseek: {
+    name: 'DeepSeek', icon: '🐋',
+    models: ['deepseek-chat','deepseek-reasoner'],
+    placeholder: 'sk-…',
+    link: 'https://platform.deepseek.com',
+    linkText: 'platform.deepseek.com',
+    info: 'DeepSeek，性价比极高，中文理解优秀。',
+    async call(apiKey, model, prompt) {
+      const r = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({ model, max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+      })
+      if (!r.ok) { const t = await r.text(); throw new Error(r.status === 401 ? 'API Key 无效' : `HTTP ${r.status}: ${t.slice(0,100)}`) }
+      const d = await r.json()
+      return d.choices[0]?.message?.content || ''
+    }
+  },
+  groq: {
+    name: 'Groq', icon: '⚡',
+    models: ['llama-3.3-70b-versatile','llama-3.1-8b-instant','gemma2-9b-it'],
+    placeholder: 'gsk_…',
+    link: 'https://console.groq.com/keys',
+    linkText: 'console.groq.com',
+    info: 'Groq 推理速度极快，有免费套餐，适合高频使用。',
+    async call(apiKey, model, prompt) {
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({ model, max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+      })
+      if (!r.ok) { const t = await r.text(); throw new Error(`HTTP ${r.status}: ${t.slice(0,100)}`) }
+      const d = await r.json()
+      return d.choices[0]?.message?.content || ''
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+//  CRYPTO — AES-GCM + PBKDF2
+// ═══════════════════════════════════════
+const CRYPTO = {
+  async deriveKey(password, salt) {
+    const enc = new TextEncoder()
+    const keyMat = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey'])
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+      keyMat, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+    )
+  },
+  async encrypt(text, password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16))
+    const iv   = crypto.getRandomValues(new Uint8Array(12))
+    const key  = await this.deriveKey(password, salt)
+    const enc  = new TextEncoder()
+    const ct   = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(text))
+    // Pack: salt(16) + iv(12) + ciphertext
+    const buf = new Uint8Array(16 + 12 + ct.byteLength)
+    buf.set(salt, 0); buf.set(iv, 16); buf.set(new Uint8Array(ct), 28)
+    return btoa(String.fromCharCode(...buf))
+  },
+  async decrypt(b64, password) {
+    const buf  = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+    const salt = buf.slice(0, 16)
+    const iv   = buf.slice(16, 28)
+    const ct   = buf.slice(28)
+    const key  = await this.deriveKey(password, salt)
+    const pt   = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct)
+    return new TextDecoder().decode(pt)
+  },
+  async hashPassword(password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16))
+    const key  = await this.deriveKey(password, salt)
+    // Encrypt a known sentinel to verify later
+    return this.encrypt('__VOCABAI_OK__', password)
+  },
+  async verifyPassword(password, storedHash) {
+    try {
+      const pt = await this.decrypt(storedHash, password)
+      return pt === '__VOCABAI_OK__'
+    } catch { return false }
+  }
+}
+
+// ═══════════════════════════════════════
+//  AUTH STATE
+// ═══════════════════════════════════════
+let _sessionPassword = null  // in-memory only, never stored
+let _currentProvider = 'anthropic'
+let _currentModel    = ''
+
+const LS = {
+  get: k => localStorage.getItem(k),
+  set: (k, v) => localStorage.setItem(k, v),
+  del: k => localStorage.removeItem(k),
+  hasPassword: () => !!localStorage.getItem('va_pwhash'),
+}
+
+// Encrypted key storage
+async function saveEncryptedKey(provider, rawKey) {
+  if (!_sessionPassword) return
+  const enc = await CRYPTO.encrypt(rawKey, _sessionPassword)
+  LS.set(`va_key_${provider}`, enc)
+}
+async function getDecryptedKey(provider) {
+  if (!_sessionPassword) return ''
+  const enc = LS.get(`va_key_${provider}`)
+  if (!enc) return ''
+  try { return await CRYPTO.decrypt(enc, _sessionPassword) }
+  catch { return '' }
+}
+async function getAllDecryptedKeys() {
+  const result = {}
+  for (const pid of Object.keys(PROVIDERS)) {
+    const enc = LS.get(`va_key_${pid}`)
+    result[pid] = enc ? '●●●●●●●●' : ''  // just show placeholder if set
+  }
+  return result
+}
+function hasEncryptedKey(provider) {
+  return !!LS.get(`va_key_${provider}`)
+}
+
+// ═══════════════════════════════════════
+//  LOCK SCREEN RENDERING
+// ═══════════════════════════════════════
+function renderLockScreen() {
+  const hasPass = LS.hasPassword()
+  const icon  = document.getElementById('lockIcon')
+  const body  = document.getElementById('lockBody')
+  if (!hasPass) {
+    icon.textContent = '🔑'
+    body.innerHTML = `
+      <div class="lock-label">设置访问密码</div>
+      <input class="lock-input" id="lPw1" type="password" placeholder="输入密码" maxlength="50">
+      <input class="lock-input" id="lPw2" type="password" placeholder="确认密码" maxlength="50">
+      <div class="lock-error" id="lockErr"></div>
+      <button class="lock-btn" onclick="setupPassword()">设置密码并进入</button>
+      <div class="lock-note">密码用于加密你的 API Key，设置后每次打开网页需要输入。<br>请牢记密码，忘记密码将无法找回已保存的 API Key。</div>`
+    setTimeout(() => document.getElementById('lPw1')?.focus(), 100)
+  } else {
+    icon.textContent = '🔒'
+    body.innerHTML = `
+      <div class="lock-label">输入访问密码</div>
+      <input class="lock-input" id="lPwUnlock" type="password" placeholder="••••••••" maxlength="50" onkeydown="if(event.key==='Enter')unlock()">
+      <div class="lock-error" id="lockErr"></div>
+      <button class="lock-btn" onclick="unlock()">解锁</button>
+      <button class="lock-btn secondary" onclick="showResetConfirm()">忘记密码（清空所有数据重置）</button>`
+    setTimeout(() => document.getElementById('lPwUnlock')?.focus(), 100)
+  }
+}
+
+function showResetConfirm() {
+  document.getElementById('lockBody').innerHTML = `
+    <div style="background:rgba(224,92,92,0.1);border:1.5px solid rgba(224,92,92,0.3);border-radius:12px;padding:16px;margin-bottom:16px;font-size:13px;color:var(--red);line-height:1.6">
+      ⚠️ 此操作将清空所有数据（API Key、生词本）并重置密码，不可恢复！
+    </div>
+    <button class="lock-btn" style="background:var(--red)" onclick="hardReset()">确认清空并重置</button>
+    <button class="lock-btn secondary" onclick="renderLockScreen()">取消</button>`
+}
+
+async function setupPassword() {
+  const p1 = document.getElementById('lPw1').value
+  const p2 = document.getElementById('lPw2').value
+  const err = document.getElementById('lockErr')
+  if (p1.length < 4) { err.textContent = '密码至少 4 位'; return }
+  if (p1 !== p2) { err.textContent = '两次输入不一致'; shakeInput('lPw2'); return }
+  const hash = await CRYPTO.encrypt('__VOCABAI_OK__', p1)
+  LS.set('va_pwhash', hash)
+  _sessionPassword = p1
+  enterApp()
+}
+
+async function unlock() {
+  const pw  = document.getElementById('lPwUnlock').value
+  const err = document.getElementById('lockErr')
+  err.textContent = ''
+  if (!pw) { err.textContent = '请输入密码'; return }
+  const hash = LS.get('va_pwhash')
+  const ok   = await CRYPTO.verifyPassword(pw, hash)
+  if (!ok) {
+    err.textContent = '密码错误，请重试'
+    shakeInput('lPwUnlock')
+    document.getElementById('lPwUnlock').value = ''
+    return
+  }
+  _sessionPassword = pw
+  enterApp()
+}
+
+function shakeInput(id) {
+  const el = document.getElementById(id)
+  el.classList.remove('shake')
+  void el.offsetWidth
+  el.classList.add('shake')
+}
+
+function hardReset() {
+  localStorage.clear()
+  sessionStorage.clear()
+  _sessionPassword = null
+  renderLockScreen()
+  showToast('已重置')
+}
+
+function enterApp() {
+  document.getElementById('lockScreen').style.display = 'none'
+  document.getElementById('appWrapper').style.display = 'block'
+  // Load settings
+  _currentProvider = LS.get('va_provider') || 'anthropic'
+  const _sm0 = LS.get(`va_model_${_currentProvider}`);
+  _currentModel = (_sm0 && PROVIDERS[_currentProvider].models.includes(_sm0)) ? _sm0 : PROVIDERS[_currentProvider].models[0];
+  if (_sm0 !== _currentModel) LS.set(`va_model_${_currentProvider}`, _currentModel)
+  updateActiveBadge()
+  initSettingsPage()
+}
+
+function lockApp() {
+  _sessionPassword = null
+  document.getElementById('appWrapper').style.display = 'none'
+  document.getElementById('lockScreen').style.display = 'flex'
+  renderLockScreen()
+}
+
+// ═══════════════════════════════════════
+//  VOCAB DB
+// ═══════════════════════════════════════
+const DB = 'va_vocab_v2'
+const getEntries = () => JSON.parse(LS.get(DB) || '[]')
+const saveEntries = e => LS.set(DB, JSON.stringify(e))
+
+// SM-2
+function sm2(e, q) {
+  q = Math.max(0, Math.min(5, q))
+  if (q >= 3) {
+    if (e.reps === 0) e.interval = 1
+    else if (e.reps === 1) e.interval = 6
+    else e.interval = Math.round(e.interval * e.ef)
+    e.reps++
+  } else { e.reps = 0; e.interval = 1 }
+  e.ef = Math.max(1.3, e.ef + 0.1 - (5-q) * (0.08 + (5-q) * 0.02))
+  const d = new Date(); d.setDate(d.getDate() + e.interval)
+  e.nextRev = d.toISOString()
+  return e
+}
+const isDue = e => new Date(e.nextRev || 0) <= new Date()
+function mkEntry(info, sent) {
+  return { id: Date.now()+Math.random(), word: info.word.toLowerCase(),
+    pos: info.partOfSpeech||'', defs: info.definitions||[],
+    ctx: info.contextMeaning||'', idioms: info.idioms||[], exs: info.examples||[],
+    sent: sent||'', notes: '', added: new Date().toISOString(),
+    nextRev: new Date().toISOString(), ef: 2.5, interval: 1, reps: 0 }
+}
+
+// ═══════════════════════════════════════
+//  API CALL
+// ═══════════════════════════════════════
+async function lookupWords(words, sentence) {
+  const key = await getDecryptedKey(_currentProvider)
+  if (!key) throw new Error(`请先在「设置」中配置 ${PROVIDERS[_currentProvider].name} 的 API Key`)
+  const wt  = words.join('、')
+  const ctx = sentence ? `\n\n原句语境："${sentence}"` : ''
+  const prompt = `请查询以下英语单词或短语：${wt}${ctx}
+
+对每个词/短语提供：
+1. 词性（partOfSpeech）
+2. 2~3个中英释义（definitions，格式"英文 / 中文"）
+3. 原句中的含义（contextMeaning，无原句留空""）
+4. 3~5个地道用法（idioms，格式"英文 — 中文"）
+5. 2~3个例句（examples）
+
+只返回纯JSON数组，不含markdown或代码块：
+[{"word":"","partOfSpeech":"","definitions":[],"contextMeaning":"","idioms":[],"examples":[]}]`
+
+  const text = await PROVIDERS[_currentProvider].call(key, _currentModel, prompt)
+  const s = text.indexOf('['), e = text.lastIndexOf(']')
+  if (s < 0 || e < 0) throw new Error('响应格式异常，请重试')
+  return JSON.parse(text.slice(s, e+1))
+}
+
+// ═══════════════════════════════════════
+//  INPUT DETECTION & TOKENS
+// ═══════════════════════════════════════
+const isSentence = t => t.trim().split(/\s+/).filter(Boolean).length > 2
+const tokenize   = t => t.trim().split(/\s+/).filter(Boolean)
+const clean      = t => t.replace(/^[^\w]+|[^\w]+$/g, '')
+
+function groupSel(tokens, sel) {
+  if (!sel.size) return []
+  const sorted = [...sel].sort((a,b)=>a-b)
+  const groups = []; let cur = [], last = -2
+  for (const i of sorted) {
+    const c = clean(tokens[i]); if (!c) continue
+    if (i === last+1) cur.push(c)
+    else { if (cur.length) groups.push(cur); cur = [c] }
+    last = i
+  }
+  if (cur.length) groups.push(cur)
+  return groups.map(g => g.join(' '))
+}
+
+let tokens=[], selIdx=new Set(), curSent=''
+let revState = { entries:[], idx:0, flipped:false, results:[], done:false }
+
+// ═══════════════════════════════════════
+//  QUERY FLOW
+// ═══════════════════════════════════════
+async function handleQuery() {
+  const input = document.getElementById('mainInput').value.trim()
+  if (!input) return
+  hideErr(); clearResults()
+  if (isSentence(input)) {
+    curSent = input; tokens = tokenize(input); selIdx = new Set()
+    renderTokens()
+    document.getElementById('tokenSection').style.display = 'block'
+  } else {
+    document.getElementById('tokenSection').style.display = 'none'
+    const words = input.split(/[,，]/).map(w=>w.trim()).filter(Boolean)
+    await runQuery(words, null)
+  }
+}
+
+function renderTokens() {
+  const wrap = document.getElementById('tokensWrap')
+  wrap.innerHTML = ''
+  tokens.forEach((tok, i) => {
+    const c = clean(tok)
+    const btn = document.createElement('button')
+    if (!c) { btn.className='token punct'; btn.textContent=tok }
+    else {
+      btn.className = 'token'+(selIdx.has(i)?' selected':'')
+      btn.textContent = tok
+      btn.onclick = () => toggleTok(i)
+    }
+    wrap.appendChild(btn)
+  })
+  updateSelPreview()
+}
+
+function toggleTok(i) { selIdx.has(i)?selIdx.delete(i):selIdx.add(i); renderTokens() }
+
+function updateSelPreview() {
+  const phrases = groupSel(tokens, selIdx)
+  const prev = document.getElementById('selPreview')
+  const btn  = document.getElementById('querySelBtn')
+  if (phrases.length) {
+    prev.style.display = 'flex'
+    prev.innerHTML = '<span style="font-size:11px;color:var(--textDim)">待查询：</span>' +
+      phrases.map(p=>`<span class="phrase-chip">${p}</span>`).join('')
+    btn.disabled = false; btn.textContent = `查询选中词（${phrases.length}个）`
+  } else {
+    prev.style.display = 'none'; btn.disabled = true; btn.textContent = '查询选中词'
+  }
+}
+
+function clearSel() { selIdx = new Set(); renderTokens() }
+async function querySelected() {
+  const phrases = groupSel(tokens, selIdx)
+  if (!phrases.length) return
+  await runQuery(phrases, curSent)
+}
+
+async function runQuery(words, sentence) {
+  showLoad(); document.getElementById('searchBtn').disabled = true
+  try {
+    const res = await lookupWords(words, sentence)
+    renderResults(res, sentence)
+  } catch(e) { showErr(e.message) }
+  finally { hideLoad(); document.getElementById('searchBtn').disabled = false }
+}
+
+// ═══════════════════════════════════════
+//  RENDER CARDS
+// ═══════════════════════════════════════
+function renderResults(results, sentence) {
+  const c = document.getElementById('resultsContainer')
+  if (!results.length) { c.innerHTML=''; return }
+  const hdr = `<div class="results-hdr"><span class="results-title">查询结果 · ${results.length}个</span><button class="clear-res" onclick="clearResults()">清除</button></div>`
+  c.innerHTML = hdr + results.map(info=>cardHTML(info, sentence)).join('')
+}
+
+function cardHTML(info, sentence) {
+  const saved = getEntries().some(e=>e.word===info.word.toLowerCase())
+  const iStr  = encodeURIComponent(JSON.stringify(info))
+  const sStr  = encodeURIComponent(sentence||'')
+  return `<div class="word-card">
+    <div class="card-header">
+      <div><span class="card-word">${info.word}</span>${info.partOfSpeech?`<span class="card-pos">${info.partOfSpeech}</span>`:''}</div>
+      <div class="card-actions">
+        <button class="save-btn${saved?' saved':''}" data-word="${info.word.toLowerCase()}"
+          onclick="toggleSave(this,'${iStr}','${sStr}')" title="收藏">
+          <svg viewBox="0 0 24 24" fill="${saved?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button class="collapse-btn" onclick="toggleCard(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      ${info.contextMeaning?`<div class="card-section"><div class="sec-label">在此句中的含义</div><div class="ctx-box">${info.contextMeaning}</div></div>`:''}
+      ${info.definitions?.length?`<div class="card-section"><div class="sec-label">释义</div><ul class="def-list">${info.definitions.map(d=>`<li>${d}</li>`).join('')}</ul></div>`:''}
+      ${info.idioms?.length?`<div class="card-section"><div class="sec-label">地道用法</div><ul class="idiom-list">${info.idioms.map(i=>`<li>${i}</li>`).join('')}</ul></div>`:''}
+      ${info.examples?.length?`<div class="card-section"><div class="sec-label">例句</div><ul class="ex-list">${info.examples.map(e=>`<li>${e}</li>`).join('')}</ul></div>`:''}
+      <div class="card-section"><div class="sec-label">我的笔记</div>
+        <textarea class="note-area" placeholder="在此添加笔记…"
+          onblur="saveNote(this,'${info.word.toLowerCase()}')">${getNotes(info.word.toLowerCase())}</textarea>
+      </div>
+    </div>
+  </div>`
+}
+
+function getNotes(word) { const e=getEntries().find(e=>e.word===word); return e?e.notes:'' }
+function saveNote(ta, word) { const es=getEntries(),e=es.find(e=>e.word===word); if(e){e.notes=ta.value;saveEntries(es)} }
+
+function toggleSave(btn, iStr, sStr) {
+  const info = JSON.parse(decodeURIComponent(iStr))
+  const sent = decodeURIComponent(sStr)
+  const word = info.word.toLowerCase()
+  const es = getEntries(), idx = es.findIndex(e=>e.word===word)
+  if (idx > -1) {
+    es.splice(idx,1); saveEntries(es)
+    btn.className='save-btn'; btn.querySelector('svg').setAttribute('fill','none')
+    showToast('已移除')
+  } else {
+    es.unshift(mkEntry(info,sent)); saveEntries(es)
+    btn.className='save-btn saved'; btn.querySelector('svg').setAttribute('fill','currentColor')
+    showToast('✨ 已加入生词本', true)
+  }
+  if (document.getElementById('page-vocab').classList.contains('active')) renderVocabPage()
+}
+
+function toggleCard(btn) {
+  const body = btn.closest('.word-card').querySelector('.card-body')
+  const svg  = btn.querySelector('svg')
+  body.classList.toggle('hidden')
+  svg.style.transform = body.classList.contains('hidden') ? 'rotate(180deg)' : ''
+}
+function clearResults() { document.getElementById('resultsContainer').innerHTML = '' }
+
+// ═══════════════════════════════════════
+//  VOCAB PAGE
+// ═══════════════════════════════════════
+function renderVocabPage() {
+  const es = getEntries()
+  const due = es.filter(isDue).length
+  const mastered = es.filter(e=>e.reps>2).length
+  document.getElementById('statTotal').textContent = es.length
+  document.getElementById('statDue').textContent = due
+  document.getElementById('statMastered').textContent = mastered
+  const bw = document.getElementById('revBannerWrap')
+  bw.innerHTML = due ? `<div class="rev-banner" onclick="showPage('review')">
+    <div class="rev-banner-text"><span>${due}</span>个单词待复习 →</div>
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  </div>` : ''
+  renderVocabList()
+}
+
+function renderVocabList() {
+  const q  = document.getElementById('vocabSearch').value.toLowerCase()
+  let es   = getEntries()
+  if (q) es = es.filter(e => e.word.includes(q)||(e.defs||[]).some(d=>d.toLowerCase().includes(q))||(e.notes||'').toLowerCase().includes(q))
+  const list = document.getElementById('vocabList')
+  if (!es.length) {
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📚</div><h3>${q?'没有找到':'生词本还是空的'}</h3><p>${q?'换个关键词试试':'在「查词」页收藏单词后显示在这里'}</p></div>`;return
+  }
+  list.innerHTML = es.map(e=>`
+  <div class="vocab-item" onclick="openDetail('${e.id}')">
+    <div class="vocab-dot ${isDue(e)?'due':'ok'}"></div>
+    <div class="vocab-info">
+      <div><span class="vocab-word">${e.word}</span>${e.pos?`<span class="vocab-pos">${e.pos}</span>`:''}</div>
+      <div class="vocab-def">${(e.defs||[])[0]||''}</div>
+    </div>
+    <div class="vocab-meta">
+      <div class="vocab-date">${relDate(e.added)}</div>
+      ${isDue(e)?'<div class="vocab-due">待复习</div>':''}
+    </div>
+    <button class="vocab-del" onclick="delEntry(event,'${e.id}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+    </button>
+  </div>`).join('')
+}
+
+function delEntry(ev, id) { ev.stopPropagation(); saveEntries(getEntries().filter(e=>String(e.id)!==String(id))); renderVocabPage(); showToast('已删除') }
+
+function openDetail(id) {
+  const e = getEntries().find(e=>String(e.id)===String(id)); if (!e) return
+  document.getElementById('modalContent').innerHTML=`
+  <button class="modal-close" onclick="closeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <div class="modal-word">${e.word}</div>
+  <div class="modal-meta">${e.pos?e.pos+' · ':''}${relDate(e.added)} · ${isDue(e)?'⏰ 待复习':'✓ 计划中'}</div>
+  ${e.sent?`<div class="modal-sec"><div class="modal-sec-title">原句</div><div class="ctx-box" style="font-style:italic">${e.sent}</div></div>`:''}
+  ${e.defs?.length?`<div class="modal-sec"><div class="modal-sec-title">释义</div><ul class="def-list">${e.defs.map(d=>`<li>${d}</li>`).join('')}</ul></div>`:''}
+  ${e.ctx?`<div class="modal-sec"><div class="modal-sec-title">语境含义</div><div class="ctx-box">${e.ctx}</div></div>`:''}
+  ${e.idioms?.length?`<div class="modal-sec"><div class="modal-sec-title">地道用法</div><ul class="idiom-list">${e.idioms.map(i=>`<li>${i}</li>`).join('')}</ul></div>`:''}
+  ${e.exs?.length?`<div class="modal-sec"><div class="modal-sec-title">例句</div><ul class="ex-list">${e.exs.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:''}
+  <div class="modal-sec"><div class="modal-sec-title">我的笔记</div>
+    <textarea class="note-area" id="mNote" style="width:100%">${e.notes||''}</textarea>
+  </div>
+  <div class="modal-sec"><div class="modal-sec-title">复习统计</div>
+    <div class="sm2-grid">
+      <div class="sm2-cell"><div class="sm2-val">${e.reps}</div><div class="sm2-key">复习次数</div></div>
+      <div class="sm2-cell"><div class="sm2-val">${e.interval}天</div><div class="sm2-key">当前间隔</div></div>
+      <div class="sm2-cell"><div class="sm2-val">${e.ef.toFixed(1)}</div><div class="sm2-key">难度系数</div></div>
+      <div class="sm2-cell"><div class="sm2-val">${relDate(e.nextRev)}</div><div class="sm2-key">下次复习</div></div>
+    </div>
+  </div>
+  <button class="del-entry-btn" onclick="delFromModal('${e.id}')">删除这个单词</button>`
+  document.getElementById('modalOverlay').classList.add('show')
+  document.getElementById('mNote').addEventListener('blur', function() {
+    const es=getEntries(),en=es.find(en=>String(en.id)===String(id))
+    if(en){en.notes=this.value;saveEntries(es)}
+  })
+}
+
+function delFromModal(id) { saveEntries(getEntries().filter(e=>String(e.id)!==String(id))); closeModal(); renderVocabPage(); showToast('已删除') }
+function closeModal(ev) { if(ev&&ev.target!==document.getElementById('modalOverlay'))return; document.getElementById('modalOverlay').classList.remove('show') }
+
+// ═══════════════════════════════════════
+//  REVIEW
+// ═══════════════════════════════════════
+function initReview() {
+  revState = { entries:getEntries().filter(isDue), idx:0, flipped:false, results:[], done:false }
+  renderReview()
+}
+
+function renderReview() {
+  const c = document.getElementById('reviewContent')
+  const { entries:es, idx, flipped, results, done } = revState
+  if (!es.length) {
+    c.innerHTML=`<div style="max-width:460px;margin:0 auto;text-align:center;padding:40px 20px">
+      <div style="font-size:56px;margin-bottom:16px">✅</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;color:var(--gold2);margin-bottom:8px">今天全部完成！</div>
+      <div style="color:var(--textDim);font-size:14px">所有单词都在计划之内 🎉</div>
+    </div>`;return
+  }
+  if (done) {
+    const good=results.filter(r=>r>=3).length, bad=results.filter(r=>r<3).length
+    c.innerHTML=`<div style="max-width:460px;margin:0 auto"><div class="rev-summary">
+      <div class="sum-trophy">🏆</div>
+      <div class="sum-title">复习完成！</div>
+      <div class="sum-sub">本次复习了 ${results.length} 个单词</div>
+      <div class="sum-stats">
+        <div class="sum-stat"><div class="sum-num good">${good}</div><div class="sum-label">记住了</div></div>
+        <div class="sum-stat"><div class="sum-num bad">${bad}</div><div class="sum-label">还要加强</div></div>
+      </div>
+      <button class="again-btn" onclick="initReview()">再复习一遍</button>
+    </div></div>`;return
+  }
+  const e = es[idx], prog = es.length ? (idx/es.length)*100 : 0
+  c.innerHTML=`<div class="review-container">
+    <div class="rev-progress"><div class="rev-bar" style="width:${prog}%"></div></div>
+    <div class="flip-card" onclick="flipCard()">
+      <div class="flip-inner${flipped?' flipped':''}">
+        <div class="flip-front">
+          ${e.pos?`<div style="font-size:10px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;background:var(--goldDim);padding:3px 10px;border-radius:20px">${e.pos}</div>`:''}
+          <div class="flip-word">${e.word}</div>
+          ${e.sent?`<div style="font-size:12px;color:var(--textDim);font-style:italic;text-align:center;margin-top:10px;padding:0 12px">"${e.sent}"</div>`:''}
+          <div class="flip-hint">点击 <span>查看释义</span></div>
+        </div>
+        <div class="flip-back">
+          <div class="flip-back-word">${e.word}</div>
+          <ul class="flip-defs">${(e.defs||[]).slice(0,3).map(d=>`<li>${d}</li>`).join('')}</ul>
+          ${e.ctx?`<div class="flip-ctx">📌 ${e.ctx}</div>`:''}
+          ${e.idioms?.length?`<div class="flip-idioms"><p>地道用法</p><ul>${e.idioms.slice(0,2).map(i=>`<li>${i}</li>`).join('')}</ul></div>`:''}
+        </div>
+      </div>
+    </div>
+    ${flipped?`<div class="rating-row">
+      <button class="rating-btn r0" onclick="rate(0)"><span>😓</span>不记得</button>
+      <button class="rating-btn r2" onclick="rate(2)"><span>😐</span>模糊</button>
+      <button class="rating-btn r3" onclick="rate(3)"><span>😊</span>记得</button>
+      <button class="rating-btn r5" onclick="rate(5)"><span>🎯</span>很熟练</button>
+    </div>`:`<div style="text-align:center;color:var(--textDim);font-size:13px;margin-top:8px">${idx+1} / ${es.length}</div>`}
+  </div>`
+}
+
+function flipCard() { revState.flipped=!revState.flipped; renderReview() }
+function rate(q) {
+  const e = revState.entries[revState.idx]
+  const es = getEntries(), stored = es.find(en=>String(en.id)===String(e.id))
+  if(stored){sm2(stored,q);saveEntries(es)}
+  revState.results.push(q); revState.flipped=false; revState.idx++
+  if(revState.idx>=revState.entries.length)revState.done=true
+  renderReview()
+}
+
+// ═══════════════════════════════════════
+//  SETTINGS PAGE
+// ═══════════════════════════════════════
+function initSettingsPage() {
+  renderProviderTabs()
+  renderProviderDetail(_currentProvider)
+  renderAllKeysList()
+}
+
+function renderProviderTabs() {
+  document.getElementById('providerTabs').innerHTML =
+    Object.entries(PROVIDERS).map(([pid, p]) =>
+      `<button class="ptab${pid===_currentProvider?' active':''}" onclick="selectProvider('${pid}')">
+        <span class="pcheck${hasEncryptedKey(pid)?' set':''}"></span>
+        ${p.icon} ${p.name}
+      </button>`
+    ).join('')
+}
+
+function selectProvider(pid) {
+  _currentProvider = pid
+  LS.set('va_provider', pid)
+  const _smP = LS.get(`va_model_${pid}`);
+  _currentModel = (_smP && PROVIDERS[pid].models.includes(_smP)) ? _smP : PROVIDERS[pid].models[0];
+  if (_smP !== _currentModel) LS.set(`va_model_${pid}`, _currentModel)
+  renderProviderTabs()
+  renderProviderDetail(pid)
+  updateActiveBadge()
+}
+
+function renderProviderDetail(pid) {
+  const p = PROVIDERS[pid]
+  // Model select
+  const sel = document.getElementById('modelSelect')
+  sel.innerHTML = p.models.map(m=>`<option value="${m}"${m===_currentModel?' selected':''}>${m}</option>`).join('')
+  // Key input placeholder & status
+  const ki = document.getElementById('apiKeyInput')
+  ki.value = ''
+  ki.placeholder = p.placeholder
+  // Status
+  const ks = document.getElementById('keyStatus')
+  if (hasEncryptedKey(pid)) {
+    ks.className='key-st ok'; ks.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> API Key 已加密保存'
+  } else {
+    ks.className='key-st none'; ks.innerHTML='未配置'
+  }
+  // Info
+  document.getElementById('providerInfo').innerHTML = `${p.info} 获取 Key：<a href="${p.link}" target="_blank">${p.linkText}</a>`
+}
+
+function saveModelChoice() {
+  _currentModel = document.getElementById('modelSelect').value
+  LS.set(`va_model_${_currentProvider}`, _currentModel)
+  updateActiveBadge()
+}
+
+async function saveProviderKey() {
+  const val = document.getElementById('apiKeyInput').value.trim()
+  if (!val) { showToast('请输入 API Key'); return }
+  if (!_sessionPassword) { showToast('请先解锁应用'); return }
+  await saveEncryptedKey(_currentProvider, val)
+  document.getElementById('apiKeyInput').value = ''
+  renderProviderTabs()
+  renderProviderDetail(_currentProvider)
+  renderAllKeysList()
+  showToast(`✅ ${PROVIDERS[_currentProvider].name} Key 已加密保存`, true)
+}
+
+function renderAllKeysList() {
+  document.getElementById('allKeysList').innerHTML =
+    Object.entries(PROVIDERS).map(([pid, p]) => {
+      const isSet  = hasEncryptedKey(pid)
+      const isActive = pid === _currentProvider
+      return `<div class="key-item">
+        <div class="key-item-left">
+          <span class="key-item-icon">${p.icon}</span>
+          <div>
+            <div class="key-item-name">${p.name}</div>
+            <div class="key-item-status${isSet?' set':''}">${isSet?'已配置（加密）':'未配置'}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${isActive?'<span class="active-tag">当前使用</span>':''}
+          ${isSet?`<button onclick="clearProviderKey('${pid}')" style="background:none;border:none;cursor:pointer;color:var(--textDim);font-size:12px;padding:4px 8px;border-radius:6px;transition:all .2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--textDim)'">清除</button>`:''}
+        </div>
+      </div>`
+    }).join('')
+}
+
+function clearProviderKey(pid) {
+  LS.del(`va_key_${pid}`)
+  renderProviderTabs()
+  renderProviderDetail(_currentProvider)
+  renderAllKeysList()
+  showToast(`已清除 ${PROVIDERS[pid].name} Key`)
+}
+
+async function changePassword() {
+  const p1 = document.getElementById('newPw1').value
+  const p2 = document.getElementById('newPw2').value
+  const st = document.getElementById('pwChangeStatus')
+  if (p1.length < 4) { st.style.color='var(--red)'; st.textContent='新密码至少 4 位'; return }
+  if (p1 !== p2) { st.style.color='var(--red)'; st.textContent='两次输入不一致'; return }
+  // Clear all existing keys (they were encrypted with old password)
+  Object.keys(PROVIDERS).forEach(pid => LS.del(`va_key_${pid}`))
+  const hash = await CRYPTO.encrypt('__VOCABAI_OK__', p1)
+  LS.set('va_pwhash', hash)
+  _sessionPassword = p1
+  document.getElementById('newPw1').value = ''
+  document.getElementById('newPw2').value = ''
+  st.style.color = 'var(--green)'
+  st.textContent = '✅ 密码已更新，请重新填入各 API Key'
+  renderProviderTabs(); renderProviderDetail(_currentProvider); renderAllKeysList()
+  showToast('密码已更新', true)
+}
+
+function updateActiveBadge() {
+  const p = PROVIDERS[_currentProvider]
+  const m = _currentModel || PROVIDERS[_currentProvider].models[0]
+  document.getElementById('activeBadge').textContent = `${p.icon} ${p.name} · ${m}`
+}
+
+// ═══════════════════════════════════════
+//  DATA MANAGEMENT
+// ═══════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify({entries:getEntries(),exportedAt:new Date().toISOString()},null,2)],{type:'application/json'})
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
+  a.download = `vocabai_${new Date().toLocaleDateString('zh')}.json`; a.click()
+  showToast('✅ 已导出', true)
+}
+function importData(ev) {
+  const file = ev.target.files[0]; if(!file) return
+  const r = new FileReader()
+  r.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result)
+      const imp = d.entries||d; if(!Array.isArray(imp)) throw new Error()
+      const ex = getEntries(), ids = new Set(ex.map(e=>e.id))
+      saveEntries([...ex, ...imp.filter(e=>!ids.has(e.id))])
+      showToast(`✅ 导入 ${imp.length} 个单词`, true); renderVocabPage()
+    } catch { showToast('❌ 导入失败') }
+  }
+  r.readAsText(file)
+}
+function clearAll() {
+  if(!confirm('确定清空所有生词本数据？')) return
+  saveEntries([]); renderVocabPage(); showToast('已清空')
+}
+
+// ═══════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'))
+  document.getElementById('page-'+name).classList.add('active')
+  document.getElementById('nav-'+name).classList.add('active')
+  if(name==='vocab') renderVocabPage()
+  if(name==='review') initReview()
+  if(name==='settings') initSettingsPage()
+}
+
+// ═══════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════
+function showLoad()  { document.getElementById('loadingBox').classList.add('show') }
+function hideLoad()  { document.getElementById('loadingBox').classList.remove('show') }
+function showErr(m)  { const b=document.getElementById('errorBox'); document.getElementById('errorMsg').textContent=m; b.classList.add('show') }
+function hideErr()   { document.getElementById('errorBox').classList.remove('show') }
+let _tt; function showToast(msg, gold=false) {
+  const t=document.getElementById('toast'); t.textContent=msg
+  t.className='toast show'+(gold?' gold':''); clearTimeout(_tt)
+  _tt=setTimeout(()=>t.classList.remove('show'), 2400)
+}
+function relDate(iso) {
+  if(!iso)return''
+  const d=new Date(iso),now=new Date(),diff=Math.round((now-d)/86400000)
+  if(diff<0)return`${Math.abs(diff)}天后`
+  if(diff===0)return'今天';if(diff===1)return'昨天'
+  if(diff<7)return`${diff}天前`;if(diff<30)return`${Math.round(diff/7)}周前`
+  return`${Math.round(diff/30)}个月前`
+}
+
+// ═══════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter') handleQuery()
+})
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+// ── INIT ──
+if (!window.crypto || !window.crypto.subtle) {
+  document.getElementById('lockScreen').innerHTML = `
+    <div style="text-align:center;padding:40px 24px;max-width:360px;margin:0 auto">
+      <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+      <div style="font-family:serif;font-size:22px;color:#e8c46a;margin-bottom:12px">浏览器不支持</div>
+      <p style="color:#7a7f95;font-size:14px;line-height:1.7">
+        此应用需要 <strong style="color:#e8e6df">HTTPS</strong> 环境才能运行加密功能。<br><br>
+        <strong style="color:#e8e6df">微信用户：</strong>点击右上角 ··· → 在默认浏览器中打开<br><br>
+        <strong style="color:#e8e6df">其他浏览器：</strong>请确保网址以 https:// 开头
+      </p>
+    </div>`
+} else {
+  renderLockScreen()
+}
+
+</script>
+</body>
+</html>
