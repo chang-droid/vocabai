@@ -1089,7 +1089,7 @@ function cardHTML(info, sentence) {
 }
 
 function getNotes(word) { const e=getEntries().find(e=>e.word===word); return e?e.notes:'' }
-function saveNote(ta, word) { const es=getEntries(),e=es.find(e=>e.word===word); if(e){e.notes=ta.value;saveEntries(es);autoSyncIfEnabled()} }
+function saveNote(ta, word) { const es=getEntries(),e=es.find(e=>e.word===word); if(e){e.notes=ta.value;saveEntries(es);syncToGist(true)} }
 
 function toggleSave(btn, iStr, sStr) {
   const info = JSON.parse(decodeURIComponent(iStr))
@@ -1101,7 +1101,7 @@ function toggleSave(btn, iStr, sStr) {
     btn.className='save-btn'; btn.querySelector('svg').setAttribute('fill','none')
     showToast('已移除')
   } else {
-    es.unshift(mkEntry(info,sent)); saveEntries(es); autoSyncIfEnabled()
+    es.unshift(mkEntry(info,sent)); saveEntries(es); syncToGist(true)
     btn.className='save-btn saved'; btn.querySelector('svg').setAttribute('fill','currentColor')
     showToast('✨ 已加入生词本', true)
   }
@@ -1187,7 +1187,7 @@ function openDetail(id) {
   document.getElementById('modalOverlay').classList.add('show')
   document.getElementById('mNote').addEventListener('blur', function() {
     const es=getEntries(),en=es.find(en=>String(en.id)===String(id))
-    if(en){en.notes=this.value;saveEntries(es);autoSyncIfEnabled()}
+    if(en){en.notes=this.value;saveEntries(es);syncToGist(true)}
   })
 }
 
@@ -1262,7 +1262,7 @@ function flipCard() { revState.flipped=!revState.flipped; renderReview() }
 function rate(q) {
   const e = revState.entries[revState.idx]
   const es = getEntries(), stored = es.find(en=>String(en.id)===String(e.id))
-  if(stored){sm2(stored,q);saveEntries(es);autoSyncIfEnabled()}
+  if(stored){sm2(stored,q);saveEntries(es);syncToGist(true)}
   revState.results.push(q); revState.flipped=false; revState.idx++
   if(revState.idx>=revState.entries.length)revState.done=true
   renderReview()
@@ -1467,13 +1467,13 @@ async function ensureGist(token) {
   return newGist.id
 }
 
-async function syncToGist() {
+async function syncToGist(silent=false) {
   const token = await getGistToken()
-  if (!token) { showToast('请先配置 GitHub Token'); return }
+  if (!token) { if(!silent) showToast('请先配置 GitHub Token'); return }
   const btn = document.getElementById('syncUpBtn')
   const info = document.getElementById('gistSyncInfo')
-  btn.textContent = '☁️ 上传中…'; btn.disabled = true
-  info.className = 'sync-pulse'; info.style.color = 'var(--textDim)'; info.textContent = '正在上传…'
+  if(btn){btn.textContent = '☁️ 上传中…'; btn.disabled = true}
+  if(info){info.className = 'sync-pulse'; info.style.color = 'var(--textDim)'; info.textContent = '正在上传…'}
   try {
     const gistId = await ensureGist(token)
     const data = { entries: getEntries(), syncedAt: new Date().toISOString(), device: navigator.userAgent.slice(0,50) }
@@ -1488,14 +1488,15 @@ async function syncToGist() {
     })
     if (!r.ok) throw new Error('上传失败')
     LS.set('va_gist_last_sync', new Date().toISOString())
-    info.className = ''; info.style.color = 'var(--green)'
-    info.textContent = `✅ 已上传 ${data.entries.length} 个单词 · ${new Date().toLocaleTimeString('zh')}`
-    showToast('☁️ 已同步到云端', true)
+    if(info){info.className = ''; info.style.color = 'var(--green)'
+    info.textContent = `✅ 已上传 ${data.entries.length} 个单词 · ${new Date().toLocaleTimeString('zh')}`}
+    if(!silent) showToast('☁️ 已同步到云端', true)
+    else showToast('☁️ 已自动保存到云端', true)
   } catch(e) {
-    info.className = ''; info.style.color = 'var(--red)'; info.textContent = '❌ ' + e.message
-    showToast('上传失败：' + e.message)
+    if(info){info.className = ''; info.style.color = 'var(--red)'; info.textContent = '❌ ' + e.message}
+    if(!silent) showToast('上传失败：' + e.message)
   } finally {
-    btn.textContent = '☁️ 上传到云端'; btn.disabled = false
+    if(btn){btn.textContent = '☁️ 上传到云端'; btn.disabled = false}
   }
 }
 
