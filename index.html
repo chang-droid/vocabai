@@ -101,6 +101,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .card-header{padding:18px 20px 16px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border)}
 .card-word{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--gold2)}
 .card-pos{display:inline-block;margin-left:9px;background:rgba(201,168,76,0.15);color:var(--gold);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:20px;vertical-align:middle;font-family:'DM Sans',sans-serif}
+.card-phonetics{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
+.phonetic-item{display:flex;align-items:center;gap:5px}
+.phonetic-label{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--textDim);text-transform:uppercase}
+.phonetic-ipa{font-family:'DM Mono',monospace;font-size:14px;color:var(--textMid)}
+.audio-btn{width:26px;height:26px;border-radius:50%;background:var(--goldDim);border:1px solid var(--gold);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--gold);transition:all .2s;flex-shrink:0}
+.audio-btn:hover{background:var(--gold);color:var(--bg)}
+.audio-btn svg{width:11px;height:11px}
+.phonetic-sep{width:1px;height:14px;background:var(--border)}
 .card-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}
 .save-btn,.collapse-btn{width:34px;height:34px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:var(--textDim)}
 .save-btn:hover{border-color:var(--gold);color:var(--gold)}.save-btn.saved{background:var(--goldDim);border-color:var(--gold);color:var(--gold)}
@@ -251,6 +259,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Toast */
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(18px);background:var(--bg3);border:1.5px solid var(--border);color:var(--text);padding:11px 20px;border-radius:50px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:9999;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.gold{border-color:var(--gold);color:var(--gold2)}
+.sync-pulse{animation:pulse 1.5s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @media(max-width:700px){
   /* Header: logo + lock on top, nav on bottom */
   .header{padding:11px 14px;flex-wrap:wrap;gap:8px}
@@ -433,6 +443,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <label style="flex:1;padding:10px;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;color:var(--text);font-size:13px;text-align:center">📥 导入生词本<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
     </div>
     <button onclick="clearAll()" style="width:100%;padding:10px;background:rgba(224,92,92,0.08);border:1.5px solid rgba(224,92,92,0.25);border-radius:9px;cursor:pointer;color:var(--red);font-family:'DM Sans',sans-serif;font-size:13px">🗑 清空所有生词本数据</button>
+  </div>
+
+  <!-- GitHub Gist Sync -->
+  <div class="settings-card" id="gistSyncCard">
+    <div class="settings-title">☁️ GitHub Gist 云同步</div>
+    <p style="font-size:13px;color:var(--textDim);line-height:1.7;margin-bottom:14px">
+      生词本数据自动同步到你的私密 GitHub Gist，换设备登录后立即恢复。<br>
+      每个人用自己的 Token，数据完全独立互不干扰。
+    </p>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--textDim);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">GitHub Personal Access Token</div>
+      <div style="display:flex;gap:8px">
+        <input class="api-input" id="gistTokenInput" type="password" placeholder="ghp_xxxxxxxxxxxx">
+        <button class="api-save-btn" onclick="saveGistToken()">保存</button>
+      </div>
+      <div style="font-size:11px;color:var(--textDim);margin-top:6px;line-height:1.6">
+        去 <a href="https://github.com/settings/tokens/new?scopes=gist&description=VocabAI" target="_blank" style="color:var(--gold)">GitHub → Settings → Tokens → New token</a>，
+        勾选 <strong style="color:var(--text)">gist</strong> 权限，生成后粘贴到这里。Token 会加密存储。
+      </div>
+    </div>
+    <div class="key-st none" id="gistStatus">未配置</div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button onclick="syncToGist()" id="syncUpBtn" style="flex:1;padding:10px;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;transition:all .2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        ☁️ 上传到云端
+      </button>
+      <button onclick="syncFromGist()" id="syncDownBtn" style="flex:1;padding:10px;background:var(--bg3);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;transition:all .2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        📥 从云端恢复
+      </button>
+    </div>
+    <div id="gistSyncInfo" style="font-size:12px;color:var(--textDim);margin-top:8px"></div>
   </div>
 
   <!-- Guide -->
@@ -749,6 +789,11 @@ function enterApp() {
   if (_sm0 !== _currentModel) LS.set(`va_model_${_currentProvider}`, _currentModel)
   updateActiveBadge()
   initSettingsPage()
+  // Auto pull from Gist on login
+  setTimeout(async () => {
+    const t = await getGistToken()
+    if (t) syncFromGist()
+  }, 1500)
 }
 
 function lockApp() {
@@ -781,11 +826,13 @@ function sm2(e, q) {
 }
 const isDue = e => new Date(e.nextRev || 0) <= new Date()
 function mkEntry(info, sent) {
+  const cached = _phoneticCache[info.word.toLowerCase()]
   return { id: Date.now()+Math.random(), word: info.word.toLowerCase(),
     pos: info.partOfSpeech||'', defs: info.definitions||[],
     ctx: info.contextMeaning||'', idioms: info.idioms||[], exs: info.examples||[],
     sent: sent||'', notes: '', added: new Date().toISOString(),
-    nextRev: new Date().toISOString(), ef: 2.5, interval: 1, reps: 0 }
+    nextRev: new Date().toISOString(), ef: 2.5, interval: 1, reps: 0,
+    ipa: cached?.ipa||'', audioUs: cached?.us?.audio||'', audioUk: cached?.uk?.audio||'' }
 }
 
 // ═══════════════════════════════════════
@@ -812,6 +859,93 @@ async function lookupWords(words, sentence) {
   const s = text.indexOf('['), e = text.lastIndexOf(']')
   if (s < 0 || e < 0) throw new Error('响应格式异常，请重试')
   return JSON.parse(text.slice(s, e+1))
+}
+
+// ═══════════════════════════════════════
+//  PHONETICS (dictionaryapi.dev)
+// ═══════════════════════════════════════
+const _phoneticCache = {}
+
+async function fetchPhonetics(word) {
+  const w = word.toLowerCase().trim()
+  // Only single words (not phrases)
+  if (w.includes(' ') || _phoneticCache[w] !== undefined) return _phoneticCache[w] || null
+  try {
+    const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(w)}`)
+    if (!r.ok) { _phoneticCache[w] = null; return null }
+    const data = await r.json()
+    const entry = Array.isArray(data) ? data[0] : null
+    if (!entry) { _phoneticCache[w] = null; return null }
+
+    // Collect all phonetics
+    const all = entry.phonetics || []
+    // Try to find US and UK separately
+    let us = null, uk = null, generic = null
+
+    for (const p of all) {
+      const audio = p.audio || ''
+      const text  = p.text  || ''
+      if (audio.includes('-us') || audio.includes('_us') || audio.includes('-american')) {
+        if (!us) us = { ipa: text, audio }
+      } else if (audio.includes('-uk') || audio.includes('_uk') || audio.includes('-british')) {
+        if (!uk) uk = { ipa: text, audio }
+      } else if (audio) {
+        if (!generic) generic = { ipa: text, audio }
+      }
+      if (text && !audio && !generic) generic = { ipa: text, audio: '' }
+    }
+
+    // Fallback: use generic for missing
+    const result = {
+      us:  us  || generic || null,
+      uk:  uk  || null,
+      ipa: (us || uk || generic)?.ipa || entry.phonetic || ''
+    }
+    _phoneticCache[w] = result
+    return result
+  } catch {
+    _phoneticCache[w] = null
+    return null
+  }
+}
+
+function playAudio(url) {
+  if (!url) return
+  const a = new Audio(url); a.play().catch(()=>{})
+}
+
+function phoneticsHTML(ph, wordId) {
+  if (!ph) return ''
+  const parts = []
+  if (ph.us) {
+    const audioBtn = ph.us.audio
+      ? `<button class="audio-btn" onclick="playAudio('${ph.us.audio}')" title="美音">
+           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+         </button>` : ''
+    parts.push(`<span class="phonetic-item"><span class="phonetic-label">美</span><span class="phonetic-ipa">${ph.us.ipa||''}</span>${audioBtn}</span>`)
+  }
+  if (ph.uk) {
+    if (parts.length) parts.push('<span class="phonetic-sep"></span>')
+    const audioBtn = ph.uk.audio
+      ? `<button class="audio-btn" onclick="playAudio('${ph.uk.audio}')" title="英音">
+           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+         </button>` : ''
+    parts.push(`<span class="phonetic-item"><span class="phonetic-label">英</span><span class="phonetic-ipa">${ph.uk.ipa||''}</span>${audioBtn}</span>`)
+  }
+  // If only generic IPA available
+  if (!ph.us && !ph.uk && ph.ipa) {
+    parts.push(`<span class="phonetic-item"><span class="phonetic-ipa">${ph.ipa}</span></span>`)
+  }
+  return parts.length ? `<div class="card-phonetics" id="ph_${wordId}">${parts.join('')}</div>` : ''
+}
+
+async function attachPhonetics(word) {
+  const id   = word.toLowerCase().replace(/[^a-z]/g, '')
+  const el   = document.getElementById('ph_' + id)
+  if (!el) return
+  const ph = await fetchPhonetics(word)
+  if (ph) el.outerHTML = phoneticsHTML(ph, id)
+  else el.remove()
 }
 
 // ═══════════════════════════════════════
@@ -913,6 +1047,8 @@ function renderResults(results, sentence) {
   if (!results.length) { c.innerHTML=''; return }
   const hdr = `<div class="results-hdr"><span class="results-title">查询结果 · ${results.length}个</span><button class="clear-res" onclick="clearResults()">清除</button></div>`
   c.innerHTML = hdr + results.map(info=>cardHTML(info, sentence)).join('')
+  // Async: fetch real phonetics for each single word
+  results.forEach(info => attachPhonetics(info.word))
 }
 
 function cardHTML(info, sentence) {
@@ -921,7 +1057,14 @@ function cardHTML(info, sentence) {
   const sStr  = encodeURIComponent(sentence||'')
   return `<div class="word-card">
     <div class="card-header">
-      <div><span class="card-word">${info.word}</span>${info.partOfSpeech?`<span class="card-pos">${info.partOfSpeech}</span>`:''}</div>
+      <div>
+        <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap">
+          <span class="card-word">${info.word}</span>${info.partOfSpeech?`<span class="card-pos">${info.partOfSpeech}</span>`:''}
+        </div>
+        <div class="card-phonetics" id="ph_${info.word.toLowerCase().replace(/[^a-z]/g,'')}">
+          <span style="font-size:12px;color:var(--textDim);font-style:italic">加载音标…</span>
+        </div>
+      </div>
       <div class="card-actions">
         <button class="save-btn${saved?' saved':''}" data-word="${info.word.toLowerCase()}"
           onclick="toggleSave(this,'${iStr}','${sStr}')" title="收藏">
@@ -958,7 +1101,7 @@ function toggleSave(btn, iStr, sStr) {
     btn.className='save-btn'; btn.querySelector('svg').setAttribute('fill','none')
     showToast('已移除')
   } else {
-    es.unshift(mkEntry(info,sent)); saveEntries(es)
+    es.unshift(mkEntry(info,sent)); saveEntries(es); autoSyncIfEnabled()
     btn.className='save-btn saved'; btn.querySelector('svg').setAttribute('fill','currentColor')
     showToast('✨ 已加入生词本', true)
   }
@@ -1090,6 +1233,11 @@ function renderReview() {
         <div class="flip-front">
           ${e.pos?`<div style="font-size:10px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;background:var(--goldDim);padding:3px 10px;border-radius:20px">${e.pos}</div>`:''}
           <div class="flip-word">${e.word}</div>
+          ${(e.ipa||e.audioUs||e.audioUk)?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+            ${e.audioUs?`<span style="display:flex;align-items:center;gap:4px"><span style="font-size:10px;color:var(--textDim);font-weight:600">美</span><button class="audio-btn" onclick="event.stopPropagation();playAudio('${e.audioUs}')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></button></span>`:''}
+            ${e.audioUk?`<span style="display:flex;align-items:center;gap:4px"><span style="font-size:10px;color:var(--textDim);font-weight:600">英</span><button class="audio-btn" onclick="event.stopPropagation();playAudio('${e.audioUk}')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></button></span>`:''}
+            ${e.ipa?`<span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--textMid)">${e.ipa}</span>`:''}
+          </div>`:''}
           ${e.sent?`<div style="font-size:12px;color:var(--textDim);font-style:italic;text-align:center;margin-top:10px;padding:0 12px">"${e.sent}"</div>`:''}
           <div class="flip-hint">点击 <span>查看释义</span></div>
         </div>
@@ -1114,7 +1262,7 @@ function flipCard() { revState.flipped=!revState.flipped; renderReview() }
 function rate(q) {
   const e = revState.entries[revState.idx]
   const es = getEntries(), stored = es.find(en=>String(en.id)===String(e.id))
-  if(stored){sm2(stored,q);saveEntries(es)}
+  if(stored){sm2(stored,q);saveEntries(es);autoSyncIfEnabled()}
   revState.results.push(q); revState.flipped=false; revState.idx++
   if(revState.idx>=revState.entries.length)revState.done=true
   renderReview()
@@ -1127,6 +1275,7 @@ function initSettingsPage() {
   renderProviderTabs()
   renderProviderDetail(_currentProvider)
   renderAllKeysList()
+  updateGistInfo()
 }
 
 function renderProviderTabs() {
@@ -1240,6 +1389,191 @@ function updateActiveBadge() {
   const p = PROVIDERS[_currentProvider]
   const m = _currentModel || PROVIDERS[_currentProvider].models[0]
   document.getElementById('activeBadge').textContent = `${p.icon} ${p.name} · ${m}`
+}
+
+// ═══════════════════════════════════════
+//  GITHUB GIST SYNC
+// ═══════════════════════════════════════
+const GIST_FILENAME = 'vocabai_data.json'
+
+async function getGistToken() {
+  if (!_sessionPassword) return ''
+  const enc = LS.get('va_gist_token')
+  if (!enc) return ''
+  try { return await CRYPTO.decrypt(enc, _sessionPassword) }
+  catch { return '' }
+}
+
+async function saveGistToken() {
+  const val = document.getElementById('gistTokenInput').value.trim()
+  if (!val) { showToast('请输入 Token'); return }
+  if (!val.startsWith('ghp_') && !val.startsWith('github_pat_')) {
+    showToast('❌ Token 格式不对，应以 ghp_ 开头'); return
+  }
+  const enc = await CRYPTO.encrypt(val, _sessionPassword)
+  LS.set('va_gist_token', enc)
+  document.getElementById('gistTokenInput').value = ''
+  // Try to find or create gist
+  const st = document.getElementById('gistStatus')
+  st.className = 'key-st none sync-pulse'; st.textContent = '正在验证 Token…'
+  try {
+    await ensureGist(val)
+    st.className = 'key-st ok'; st.textContent = '✅ Token 已验证并加密保存'
+    showToast('✅ GitHub Token 已保存', true)
+    updateGistInfo()
+  } catch(e) {
+    st.className = 'key-st none'; st.textContent = '❌ ' + e.message
+  }
+}
+
+async function ensureGist(token) {
+  // Check if we already have a gist id stored
+  let gistId = LS.get('va_gist_id')
+  if (gistId) {
+    // Verify it still exists
+    const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    })
+    if (r.ok) return gistId
+  }
+  // Search for existing VocabAI gist
+  const listR = await fetch('https://api.github.com/gists?per_page=100', {
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+  })
+  if (!listR.ok) throw new Error('Token 无效或无 gist 权限')
+  const gists = await listR.json()
+  const existing = gists.find(g => g.files && g.files[GIST_FILENAME])
+  if (existing) {
+    LS.set('va_gist_id', existing.id)
+    return existing.id
+  }
+  // Create new private gist
+  const createR = await fetch('https://api.github.com/gists', {
+    method: 'POST',
+    headers: {
+      'Authorization': `token ${token}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      description: 'VocabAI 生词本同步数据',
+      public: false,
+      files: { [GIST_FILENAME]: { content: JSON.stringify({ entries: [], createdAt: new Date().toISOString() }) } }
+    })
+  })
+  if (!createR.ok) throw new Error('创建 Gist 失败')
+  const newGist = await createR.json()
+  LS.set('va_gist_id', newGist.id)
+  return newGist.id
+}
+
+async function syncToGist() {
+  const token = await getGistToken()
+  if (!token) { showToast('请先配置 GitHub Token'); return }
+  const btn = document.getElementById('syncUpBtn')
+  const info = document.getElementById('gistSyncInfo')
+  btn.textContent = '☁️ 上传中…'; btn.disabled = true
+  info.className = 'sync-pulse'; info.style.color = 'var(--textDim)'; info.textContent = '正在上传…'
+  try {
+    const gistId = await ensureGist(token)
+    const data = { entries: getEntries(), syncedAt: new Date().toISOString(), device: navigator.userAgent.slice(0,50) }
+    const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(data, null, 2) } } })
+    })
+    if (!r.ok) throw new Error('上传失败')
+    LS.set('va_gist_last_sync', new Date().toISOString())
+    info.className = ''; info.style.color = 'var(--green)'
+    info.textContent = `✅ 已上传 ${data.entries.length} 个单词 · ${new Date().toLocaleTimeString('zh')}`
+    showToast('☁️ 已同步到云端', true)
+  } catch(e) {
+    info.className = ''; info.style.color = 'var(--red)'; info.textContent = '❌ ' + e.message
+    showToast('上传失败：' + e.message)
+  } finally {
+    btn.textContent = '☁️ 上传到云端'; btn.disabled = false
+  }
+}
+
+async function syncFromGist() {
+  const token = await getGistToken()
+  if (!token) { showToast('请先配置 GitHub Token'); return }
+  const btn = document.getElementById('syncDownBtn')
+  const info = document.getElementById('gistSyncInfo')
+  btn.textContent = '📥 下载中…'; btn.disabled = true
+  info.className = 'sync-pulse'; info.style.color = 'var(--textDim)'; info.textContent = '正在从云端获取数据…'
+  try {
+    const gistId = await ensureGist(token)
+    const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    })
+    if (!r.ok) throw new Error('获取失败')
+    const gist = await r.json()
+    const raw = gist.files[GIST_FILENAME]?.content
+    if (!raw) throw new Error('云端没有数据')
+    const cloudData = JSON.parse(raw)
+    const cloudEntries = cloudData.entries || []
+    if (!cloudEntries.length) {
+      info.className = ''; info.style.color = 'var(--textDim)'; info.textContent = '云端暂无数据'
+      showToast('云端暂无数据'); return
+    }
+    // Merge: keep all, deduplicate by id
+    const local = getEntries()
+    const ids = new Set(local.map(e => e.id))
+    const merged = [...local, ...cloudEntries.filter(e => !ids.has(e.id))]
+    // Sort by dateAdded desc
+    merged.sort((a,b) => new Date(b.added||0) - new Date(a.added||0))
+    saveEntries(merged)
+    LS.set('va_gist_last_sync', new Date().toISOString())
+    info.className = ''; info.style.color = 'var(--green)'
+    info.textContent = `✅ 已合并 ${cloudEntries.length} 个云端单词，本地共 ${merged.length} 个`
+    showToast(`✅ 已从云端恢复 ${cloudEntries.length} 个单词`, true)
+    renderVocabPage()
+  } catch(e) {
+    info.className = ''; info.style.color = 'var(--red)'; info.textContent = '❌ ' + e.message
+    showToast('下载失败：' + e.message)
+  } finally {
+    btn.textContent = '📥 从云端恢复'; btn.disabled = false
+  }
+}
+
+async function updateGistInfo() {
+  const st = document.getElementById('gistStatus')
+  if (!st) return
+  const token = await getGistToken()
+  if (!token) {
+    st.className = 'key-st none'; st.textContent = '未配置'
+    return
+  }
+  st.className = 'key-st ok'
+  const lastSync = LS.get('va_gist_last_sync')
+  const gistId = LS.get('va_gist_id')
+  if (lastSync) {
+    st.textContent = `✅ Token 已配置 · 上次同步：${relDate(lastSync)}`
+  } else {
+    st.textContent = '✅ Token 已配置，尚未同步'
+  }
+  if (gistId) {
+    const info = document.getElementById('gistSyncInfo')
+    if (info && !info.textContent) {
+      info.textContent = `Gist ID: ${gistId.slice(0,8)}…`
+      info.style.color = 'var(--textDim)'
+    }
+  }
+}
+
+// Auto-sync on save (call after saveEntries)
+async function autoSyncIfEnabled() {
+  const token = await getGistToken()
+  if (!token) return
+  // Debounce: only sync if last sync was > 30s ago
+  const last = new Date(LS.get('va_gist_last_sync') || 0)
+  if (Date.now() - last < 30000) return
+  syncToGist()
 }
 
 // ═══════════════════════════════════════
