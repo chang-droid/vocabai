@@ -101,6 +101,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .card-header{padding:18px 20px 16px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border)}
 .card-word{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--gold2)}
 .card-pos{display:inline-block;margin-left:9px;background:rgba(201,168,76,0.15);color:var(--gold);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:20px;vertical-align:middle;font-family:'DM Sans',sans-serif}
+.sent-card{background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.03));border:1.5px solid rgba(201,168,76,0.35);border-radius:18px;margin-bottom:14px;overflow:hidden;animation:slideUp .3s ease}
+.sent-card-header{padding:16px 20px 14px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid rgba(201,168,76,0.15)}
+.sent-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:var(--goldDim);padding:3px 9px;border-radius:20px}
+.sent-original{font-size:16px;color:var(--text);line-height:1.6;margin:14px 20px 8px;font-style:italic}
+.sent-translation{font-size:15px;color:var(--textMid);line-height:1.6;margin:0 20px 16px;padding:10px 14px;background:rgba(0,0,0,0.2);border-radius:10px;border-left:3px solid var(--gold)}
+.sent-note-wrap{padding:0 20px 16px}
+.phrases-divider{display:flex;align-items:center;gap:10px;margin:6px 0 14px;font-size:11px;color:var(--textDim);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.phrases-divider::before,.phrases-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 .card-phonetics{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
 .phonetic-item{display:flex;align-items:center;gap:5px}
 .phonetic-label{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--textDim);text-transform:uppercase}
@@ -362,7 +370,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
   <div class="token-section" id="tokenSection" style="display:none">
     <div class="token-header">
-      <span class="token-label">点击选词 · 相邻词自动合并为短语</span>
+      <span class="token-label">✦ 补充查询：点击选词 · 相邻词自动合并为短语</span>
       <button class="token-clear" onclick="clearSel()">清除选择</button>
     </div>
     <div class="tokens-wrap" id="tokensWrap"></div>
@@ -836,12 +844,35 @@ function mkEntry(info, sent) {
     ctx: info.contextMeaning||'', idioms: info.idioms||[], exs: info.examples||[],
     sent: sent||'', notes: '', added: new Date().toISOString(),
     nextRev: new Date().toISOString(), ef: 2.5, interval: 1, reps: 0,
-    ipa: cached?.ipa||'', audioUs: cached?.us?.audio||'', audioUk: cached?.uk?.audio||'' }
+    ipa: cached?.ipa||'', audioUs: cached?.us?.audio||'', audioUk: cached?.uk?.audio||'',
+    isSentence: info.isSentence||false }
 }
 
 // ═══════════════════════════════════════
 //  API CALL
 // ═══════════════════════════════════════
+async function lookupSentence(sentence) {
+  const key = await getDecryptedKey(_currentProvider)
+  if (!key) throw new Error(`请先在「设置」中配置 ${PROVIDERS[_currentProvider].name} 的 API Key`)
+  const prompt = `请分析以下英语句子："${sentence}"
+
+返回纯JSON对象（不含markdown或代码块）：
+{
+  "translation": "句子的自然中文翻译",
+  "words": [
+    {"word":"句中值得学习的词或短语","partOfSpeech":"词性","definitions":["英文释义 / 中文释义"],"contextMeaning":"在此句中的具体含义","idioms":["用法 — 中文"],"examples":["例句"]}
+  ]
+}
+
+words 只包含对中高级英语学习者有价值的词汇或短语（跳过简单词如 a/the/is/are/I/you），3~6个为宜。`
+
+  const text = await PROVIDERS[_currentProvider].call(key, _currentModel, prompt)
+  const s = text.indexOf('{'), e = text.lastIndexOf('}')
+  if (s < 0 || e < 0) throw new Error('响应格式异常，请重试')
+  const result = JSON.parse(text.slice(s, e+1))
+  return { translation: result.translation || '', words: result.words || [] }
+}
+
 async function lookupWords(words, sentence) {
   const key = await getDecryptedKey(_currentProvider)
   if (!key) throw new Error(`请先在「设置」中配置 ${PROVIDERS[_currentProvider].name} 的 API Key`)
@@ -985,8 +1016,11 @@ async function handleQuery() {
   hideErr(); clearResults()
   if (isSentence(input)) {
     curSent = input; tokens = tokenize(input); selIdx = new Set()
-    renderTokens()
+    // Show token section for supplementary queries
     document.getElementById('tokenSection').style.display = 'block'
+    renderTokens()
+    // Immediately query the sentence
+    await runSentenceQuery(input)
   } else {
     document.getElementById('tokenSection').style.display = 'none'
     const words = input.split(/[,，]/).map(w=>w.trim()).filter(Boolean)
@@ -1021,9 +1055,9 @@ function updateSelPreview() {
     prev.style.display = 'flex'
     prev.innerHTML = '<span style="font-size:11px;color:var(--textDim)">待查询：</span>' +
       phrases.map(p=>`<span class="phrase-chip">${p}</span>`).join('')
-    btn.disabled = false; btn.textContent = `查询选中词（${phrases.length}个）`
+    btn.disabled = false; btn.textContent = `补充查询选中词（${phrases.length}个）`
   } else {
-    prev.style.display = 'none'; btn.disabled = true; btn.textContent = '查询选中词'
+    prev.style.display = 'none'; btn.disabled = true; btn.textContent = '请先选择词语'
   }
 }
 
@@ -1031,27 +1065,84 @@ function clearSel() { selIdx = new Set(); renderTokens() }
 async function querySelected() {
   const phrases = groupSel(tokens, selIdx)
   if (!phrases.length) return
-  await runQuery(phrases, curSent)
+  await runQuery(phrases, curSent, true) // true = append mode
 }
 
-async function runQuery(words, sentence) {
+async function runSentenceQuery(sentence) {
   showLoad(); document.getElementById('searchBtn').disabled = true
   try {
-    const res = await lookupWords(words, sentence)
-    renderResults(res, sentence)
+    const { translation, words } = await lookupSentence(sentence)
+    renderSentenceResults(sentence, translation, words)
   } catch(e) { showErr(e.message) }
   finally { hideLoad(); document.getElementById('searchBtn').disabled = false }
+}
+
+async function runQuery(words, sentence, append=false) {
+  const btn = document.getElementById('querySelBtn')
+  if(btn){ btn.disabled=true; btn.textContent='查询中…' }
+  showLoad()
+  document.getElementById('searchBtn').disabled = true
+  try {
+    const res = await lookupWords(words, sentence)
+    if (append) appendResults(res, sentence)
+    else renderResults(res, sentence)
+  } catch(e) { showErr(e.message) }
+  finally {
+    hideLoad()
+    document.getElementById('searchBtn').disabled = false
+    if(btn){ btn.disabled=false; btn.textContent=`查询选中词` }
+  }
 }
 
 // ═══════════════════════════════════════
 //  RENDER CARDS
 // ═══════════════════════════════════════
+function sentenceCardHTML(sentence, translation) {
+  const cardId = ++_cardIdCounter
+  const sentEntry = { word: sentence, isSentence: true, translation }
+  _cardStore.set(cardId, { info: { word: sentence, partOfSpeech: 'SENTENCE', definitions: [translation], contextMeaning: '', idioms: [], examples: [], isSentence: true }, sentence: '' })
+  const saved = getEntries().some(e => e.word === sentence.toLowerCase())
+  return `<div class="sent-card">
+    <div class="sent-card-header">
+      <span class="sent-label">📖 原句翻译</span>
+      <button class="save-btn${saved?' saved':''}" data-card-id="${cardId}" onclick="toggleSave(this)" title="收藏这句话" style="width:34px;height:34px;border-radius:8px;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:var(--textDim)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="${saved?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      </button>
+    </div>
+    <div class="sent-original">"${sentence}"</div>
+    <div class="sent-translation">${translation}</div>
+    <div class="sent-note-wrap">
+      <textarea class="note-area" placeholder="添加笔记…" style="min-height:52px"
+        onblur="saveNote(this,'${sentence.toLowerCase().replace(/'/g,"\'")}')">${getNotes(sentence.toLowerCase())}</textarea>
+    </div>
+  </div>`
+}
+
+function renderSentenceResults(sentence, translation, words) {
+  const c = document.getElementById('resultsContainer')
+  const clearBtn = `<div class="results-hdr"><span class="results-title">句子分析</span><button class="clear-res" onclick="clearResults()">清除</button></div>`
+  const sentCard = sentenceCardHTML(sentence, translation)
+  const divider = words.length ? `<div class="phrases-divider">自动识别的词汇 · ${words.length}个</div>` : ''
+  const wordCards = words.map(info => cardHTML(info, sentence)).join('')
+  c.innerHTML = clearBtn + sentCard + divider + wordCards
+  words.forEach(info => attachPhonetics(info.word))
+}
+
+function appendResults(results, sentence) {
+  const c = document.getElementById('resultsContainer')
+  if (!c.innerHTML) { renderResults(results, sentence); return }
+  // Remove existing header, re-add with new count later
+  const newCards = results.map(info => cardHTML(info, sentence)).join('')
+  const divider = `<div class="phrases-divider">补充查询 · ${results.length}个</div>`
+  c.insertAdjacentHTML('beforeend', divider + newCards)
+  results.forEach(info => attachPhonetics(info.word))
+}
+
 function renderResults(results, sentence) {
   const c = document.getElementById('resultsContainer')
   if (!results.length) { c.innerHTML=''; return }
   const hdr = `<div class="results-hdr"><span class="results-title">查询结果 · ${results.length}个</span><button class="clear-res" onclick="clearResults()">清除</button></div>`
   c.innerHTML = hdr + results.map(info=>cardHTML(info, sentence)).join('')
-  // Async: fetch real phonetics for each single word
   results.forEach(info => attachPhonetics(info.word))
 }
 
@@ -1096,9 +1187,11 @@ function getNotes(word) { const e=getEntries().find(e=>e.word===word); return e?
 function saveNote(ta, word) { const es=getEntries(),e=es.find(e=>e.word===word); if(e){e.notes=ta.value;saveEntries(es); safeSync()} }
 
 function toggleSave(btn) {
-  const cardId = parseInt(btn.dataset.cardId)
-  const stored = _cardStore.get(cardId)
-  if (!stored) { showToast('❌ 数据丢失，请重新查词'); return }
+  try {
+    const cardId = parseInt(btn.dataset.cardId)
+    console.log('[toggleSave] cardId:', cardId, 'storeSize:', _cardStore.size)
+    const stored = _cardStore.get(cardId)
+    if (!stored) { showToast('❌ 数据丢失，请重新查词（cardId:'+cardId+'）'); return }
   const info = stored.info
   const sent = stored.sentence
   const word = info.word.toLowerCase()
@@ -1113,6 +1206,10 @@ function toggleSave(btn) {
     showToast('✨ 已加入生词本', true)
   }
   if (document.getElementById('page-vocab').classList.contains('active')) renderVocabPage()
+  } catch(err) {
+    console.error('[toggleSave] error:', err)
+    showToast('❌ 收藏出错: ' + err.message)
+  }
 }
 
 function toggleCard(btn) {
