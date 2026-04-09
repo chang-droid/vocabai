@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>VocabAI · 英语词汇助手</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 
 /* ── MOBILE GLOBAL ── */
@@ -112,11 +112,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .card-phonetics{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
 .phonetic-item{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .phonetic-label{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--textDim);text-transform:uppercase;background:var(--bg3);padding:2px 6px;border-radius:4px}
-.phonetic-ipa{font-family:'Noto Serif','Segoe UI','Arial Unicode MS',sans-serif;font-size:15px;color:var(--textMid);letter-spacing:.03em;unicode-bidi:normal;direction:ltr}
+.phonetic-ipa{font-family:'Lucida Sans Unicode','Arial Unicode MS','Helvetica Neue',Arial,sans-serif;font-size:15px;color:var(--textMid);letter-spacing:.03em;unicode-bidi:normal;direction:ltr}
 .phonetic-ipa .stress-primary{color:var(--gold2);font-weight:600}
 .phonetic-ipa .stress-secondary{color:var(--gold);font-weight:500}
 .phonetic-ipa .syllable-sep{color:var(--border);margin:0 1px}
-.phonetic-syllables{font-family:'Noto Serif','Segoe UI',sans-serif;font-size:12px;color:var(--textDim);margin-top:3px;letter-spacing:.05em}
+.phonetic-syllables{font-family:'Lucida Sans Unicode','Arial Unicode MS',Arial,sans-serif;font-size:12px;color:var(--textDim);margin-top:3px;letter-spacing:.05em}
 .audio-btn{width:28px;height:28px;border-radius:50%;background:var(--goldDim);border:1.5px solid var(--gold);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--gold);transition:all .2s;flex-shrink:0}
 .audio-btn:hover{background:var(--gold);color:var(--bg)}
 .audio-btn svg{width:12px;height:12px}
@@ -1376,7 +1376,7 @@ function renderReview() {
           ${(e.ipa||e.audioUs||e.audioUk)?`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;flex-wrap:wrap">
             ${e.audioUs?`<span style="display:flex;align-items:center;gap:4px"><span style="font-size:10px;color:var(--textDim);font-weight:600">美</span><button class="audio-btn" onclick="event.stopPropagation();playAudio('${e.audioUs}')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></button></span>`:''}
             ${e.audioUk?`<span style="display:flex;align-items:center;gap:4px"><span style="font-size:10px;color:var(--textDim);font-weight:600">英</span><button class="audio-btn" onclick="event.stopPropagation();playAudio('${e.audioUk}')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></button></span>`:''}
-            ${e.ipa?`<span style="font-family:'Noto Serif','Segoe UI',sans-serif;font-size:14px;color:var(--textMid)">${e.ipa}</span>`:''}
+            ${e.ipa?`<span style="font-family:'Lucida Sans Unicode','Arial Unicode MS','Helvetica Neue',Arial,sans-serif;font-size:14px;color:var(--textMid)">${e.ipa}</span>`:''}
           </div>`:''}
           ${e.sent?`<div style="font-size:12px;color:var(--textDim);font-style:italic;text-align:center;margin-top:10px;padding:0 12px">"${e.sent}"</div>`:''}
           <div class="flip-hint">点击 <span>查看释义</span></div>
