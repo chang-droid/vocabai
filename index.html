@@ -507,6 +507,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 // ═══════════════════════════════════════
 //  PROVIDERS CONFIG
 // ═══════════════════════════════════════
+// Card data store — avoids HTML encoding issues with special chars in onclick
+const _cardStore = new Map()
+let _cardIdCounter = 0
+
 const PROVIDERS = {
   anthropic: {
     name: 'Claude', icon: '🤖',
@@ -1052,10 +1056,10 @@ function renderResults(results, sentence) {
 }
 
 function cardHTML(info, sentence) {
-  const saved = getEntries().some(e=>e.word===info.word.toLowerCase())
-  const iStr  = encodeURIComponent(JSON.stringify(info))
-  const sStr  = encodeURIComponent(sentence||'')
-  return `<div class="word-card">
+  const saved  = getEntries().some(e=>e.word===info.word.toLowerCase())
+  const cardId = ++_cardIdCounter
+  _cardStore.set(cardId, { info, sentence: sentence||'' })
+  return `<div class="word-card" data-card-id="${cardId}">
     <div class="card-header">
       <div>
         <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap">
@@ -1066,8 +1070,8 @@ function cardHTML(info, sentence) {
         </div>
       </div>
       <div class="card-actions">
-        <button class="save-btn${saved?' saved':''}" data-word="${info.word.toLowerCase()}"
-          onclick="toggleSave(this,'${iStr}','${sStr}')" title="收藏">
+        <button class="save-btn${saved?' saved':''}" data-card-id="${cardId}"
+          onclick="toggleSave(this)" title="收藏">
           <svg viewBox="0 0 24 24" fill="${saved?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
         </button>
         <button class="collapse-btn" onclick="toggleCard(this)">
@@ -1091,9 +1095,12 @@ function cardHTML(info, sentence) {
 function getNotes(word) { const e=getEntries().find(e=>e.word===word); return e?e.notes:'' }
 function saveNote(ta, word) { const es=getEntries(),e=es.find(e=>e.word===word); if(e){e.notes=ta.value;saveEntries(es); safeSync()} }
 
-function toggleSave(btn, iStr, sStr) {
-  const info = JSON.parse(decodeURIComponent(iStr))
-  const sent = decodeURIComponent(sStr)
+function toggleSave(btn) {
+  const cardId = parseInt(btn.dataset.cardId)
+  const stored = _cardStore.get(cardId)
+  if (!stored) { showToast('❌ 数据丢失，请重新查词'); return }
+  const info = stored.info
+  const sent = stored.sentence
   const word = info.word.toLowerCase()
   const es = getEntries(), idx = es.findIndex(e=>e.word===word)
   if (idx > -1) {
@@ -1114,7 +1121,7 @@ function toggleCard(btn) {
   body.classList.toggle('hidden')
   svg.style.transform = body.classList.contains('hidden') ? 'rotate(180deg)' : ''
 }
-function clearResults() { document.getElementById('resultsContainer').innerHTML = '' }
+function clearResults() { document.getElementById('resultsContainer').innerHTML = ''; _cardStore.clear(); _cardIdCounter = 0 }
 
 // ═══════════════════════════════════════
 //  VOCAB PAGE
